@@ -448,15 +448,15 @@ body.deep{background-color:#120810}
 <!-- ═══════════ CLASSIFIED FILES: J6 EVIDENCE ═══════════ -->
 <section id="classifiedSection" style="background:#08080e;position:relative;overflow:hidden;padding:80px 20px;min-height:100vh">
   <div class="scratches-overlay"></div>
-  <div style="max-width:1000px;margin:0 auto;text-align:center">
+  <div style="max-width:1100px;margin:0 auto;text-align:center">
     <div class="step-number" style="text-align:center">08 // The Evidence</div>
     <h2 class="step-title" style="text-align:center;margin-bottom:12px">Echo Chambers Have <span>Consequences</span></h2>
     <p class="step-body" style="max-width:640px;margin:0 auto 60px;text-align:center">
       January 6, 2021. Years of algorithmically amplified rage, unchecked by privacy laws that were <strong>systematically killed</strong>, culminated in this.
     </p>
 
-    <!-- Folder + spill area -->
-    <div id="spillZone" style="position:relative;width:100%;min-height:800px;margin:0 auto">
+    <!-- Folder + spill area + video -->
+    <div id="spillZone" style="position:relative;width:100%;min-height:900px;margin:0 auto">
       <!-- Red flash overlay -->
       <div id="spillFlash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(230,57,70,.6);z-index:9998;pointer-events:none;opacity:0;transition:opacity .15s"></div>
 
@@ -467,6 +467,30 @@ body.deep{background-color:#120810}
           <div style="font-family:'Share Tech Mono',monospace;font-size:.7rem;font-weight:900;color:#e63946;border:2px solid #e63946;padding:3px 8px;letter-spacing:2px;transform:rotate(-8deg);position:absolute;top:12px;right:12px">CLASSIFIED</div>
           <div style="font-family:'Share Tech Mono',monospace;font-size:.8rem;color:#4a3520;letter-spacing:1px;text-align:center">JANUARY 6<br>EVIDENCE</div>
         </div>
+      </div>
+
+      <!-- Video monitor in center -->
+      <div id="videoMonitor" style="position:absolute;left:50%;top:180px;transform:translateX(-50%);z-index:8;opacity:0;width:420px">
+        <!-- CRT frame -->
+        <div style="background:#111;border:3px solid #2a2a3a;border-radius:8px;overflow:hidden;position:relative;box-shadow:0 0 60px rgba(0,0,0,.8),0 0 30px rgba(230,57,70,.1)">
+          <!-- Static canvas overlay -->
+          <canvas id="staticCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none"></canvas>
+          <!-- Scanline overlay -->
+          <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.1) 0px,rgba(0,0,0,.1) 1px,transparent 1px,transparent 3px)"></div>
+          <!-- REC indicator -->
+          <div id="recDot" style="position:absolute;top:10px;right:14px;z-index:5;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .5s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#e63946;animation:blink 1s infinite"></div>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#e63946;letter-spacing:1px">REC</span>
+          </div>
+          <!-- Timestamp -->
+          <div id="vidTimestamp" style="position:absolute;bottom:8px;left:12px;z-index:5;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:rgba(230,57,70,.6);letter-spacing:1px;opacity:0;transition:opacity .5s">01/06/2021 14:12:33</div>
+          <!-- The video -->
+          <video id="evidenceVideo" muted playsinline style="width:100%;display:block;filter:contrast(1.1) saturate(.7);position:relative;z-index:2">
+            <source src="assets/evidence/fairlamb_weapons_resized.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Monitor label -->
+        <div style="text-align:center;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#e63946;letter-spacing:3px;opacity:.6">EXHIBIT A // SURVEILLANCE FOOTAGE</div>
       </div>
 
       <!-- Spilled photos -->
@@ -483,7 +507,7 @@ body.deep{background-color:#120810}
 
 <style>
 .spill-photo{
-  position:absolute;width:200px;border:4px solid #1a1a2a;border-radius:3px;
+  position:absolute;width:180px;border:4px solid #1a1a2a;border-radius:3px;
   box-shadow:0 2px 10px rgba(0,0,0,.6);cursor:pointer;
   opacity:0;
   transform-origin:center center;
@@ -514,16 +538,28 @@ body.deep{background-color:#120810}
   60%{transform:translateX(-20%) rotate(40deg) translateY(20px) scale(.95)}
   100%{transform:translateX(-15%) rotate(45deg) translateY(40px) scale(.85);opacity:.25}
 }
-@keyframes redPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0)}
-  50%{box-shadow:0 0 0 40px rgba(230,57,70,.08)}
-}
 #classifiedSection.active-pulse{animation:sectionPulse 2s ease-out}
 @keyframes sectionPulse{
   0%{background:#08080e}
   10%{background:#1a0a0e}
   50%{background:#120810}
   100%{background:#08080e}
+}
+@keyframes monitorFlicker{
+  0%{opacity:0}
+  5%{opacity:.8}
+  10%{opacity:.2}
+  15%{opacity:.9}
+  20%{opacity:.1}
+  30%{opacity:.7}
+  35%{opacity:0}
+  50%{opacity:.85}
+  55%{opacity:.3}
+  65%{opacity:.95}
+  75%{opacity:.5}
+  80%{opacity:1}
+  85%{opacity:.7}
+  100%{opacity:1}
 }
 </style>
 
@@ -540,16 +576,16 @@ body.deep{background-color:#120810}
     {img:'assets/evidence/evidence8.jpeg'}
   ];
 
-  // Explosive scatter positions — wide spread, dramatic angles
+  // Photos scatter AROUND the video — corners and sides
   var scatters=[
-    {x:'2%',  y:'120px', r:-18, dx:-60, dy:-40},
-    {x:'24%', y:'60px',  r:12,  dx:-20, dy:-60},
-    {x:'50%', y:'40px',  r:-3,  dx:10,  dy:-70},
-    {x:'74%', y:'80px',  r:20,  dx:50,  dy:-50},
-    {x:'5%',  y:'380px', r:10,  dx:-70, dy:30},
-    {x:'30%', y:'400px', r:-14, dx:-30, dy:50},
-    {x:'55%', y:'370px', r:7,   dx:30,  dy:40},
-    {x:'78%', y:'390px', r:-11, dx:60,  dy:35}
+    {x:'1%',  y:'140px', r:-15, dx:-60, dy:-40},
+    {x:'18%', y:'60px',  r:10,  dx:-30, dy:-60},
+    {x:'68%', y:'50px',  r:-8,  dx:30,  dy:-65},
+    {x:'82%', y:'130px', r:18,  dx:60,  dy:-45},
+    {x:'0%',  y:'480px', r:8,   dx:-65, dy:30},
+    {x:'16%', y:'540px', r:-12, dx:-25, dy:50},
+    {x:'70%', y:'520px', r:6,   dx:35,  dy:45},
+    {x:'83%', y:'470px', r:-10, dx:55,  dy:25}
   ];
 
   var container=document.getElementById('spilledPhotos');
@@ -558,6 +594,11 @@ body.deep{background-color:#120810}
   var sec=document.getElementById('classifiedSection');
   var lb=document.getElementById('evidenceLightbox');
   var lbImg=document.getElementById('evidenceImg');
+  var monitor=document.getElementById('videoMonitor');
+  var video=document.getElementById('evidenceVideo');
+  var staticCvs=document.getElementById('staticCanvas');
+  var recDot=document.getElementById('recDot');
+  var vidTs=document.getElementById('vidTimestamp');
   var photoEls=[];
 
   files.forEach(function(f,i){
@@ -565,11 +606,9 @@ body.deep{background-color:#120810}
     el.src=f.img;
     el.className='spill-photo';
     el.alt='Evidence '+(i+1);
-    // Stack at folder center
-    el.style.left='calc(50% - 100px)';
+    el.style.left='calc(50% - 90px)';
     el.style.top='60px';
     var s=scatters[i];
-    // Set CSS custom properties for the animation
     el.style.setProperty('--start-tf','translate('+s.dx*2+'px,'+s.dy*2+'px) rotate('+(s.r*3)+'deg) scale(.2)');
     el.style.setProperty('--end-tf','rotate('+s.r+'deg)');
     el.addEventListener('click',function(){
@@ -583,6 +622,39 @@ body.deep{background-color:#120810}
   lb.addEventListener('click',function(){lb.style.display='none';});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.style.display='none';});
 
+  // TV static effect
+  function drawStatic(){
+    var w=staticCvs.width=staticCvs.clientWidth;
+    var h=staticCvs.height=staticCvs.clientHeight;
+    if(!w||!h)return;
+    var ctx=staticCvs.getContext('2d');
+    var img=ctx.createImageData(w,h);
+    var d=img.data;
+    for(var i=0;i<d.length;i+=4){
+      var v=Math.random()*255|0;
+      d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=180;
+    }
+    ctx.putImageData(img,0,0);
+  }
+  var staticInterval=null;
+  function startStatic(){staticInterval=setInterval(drawStatic,50);}
+  function stopStatic(){
+    clearInterval(staticInterval);
+    // Fade out static
+    staticCvs.style.transition='opacity .8s';
+    staticCvs.style.opacity='0';
+  }
+
+  // Ticking timestamp
+  var tsInterval=null;
+  function startTimestamp(){
+    var h=14,m=12,s=33;
+    tsInterval=setInterval(function(){
+      s++;if(s>=60){s=0;m++;if(m>=60){m=0;h++;}}
+      vidTs.textContent='01/06/2021 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    },1000);
+  }
+
   var spilled=false;
   new IntersectionObserver(function(entries){
     if(entries[0].isIntersecting&&!spilled){
@@ -593,35 +665,59 @@ body.deep{background-color:#120810}
       document.body.style.animation='horrorShake .7s ease';
       setTimeout(function(){flash.style.opacity='0';document.body.style.animation='';},500);
 
-      // Phase 2: Folder slams and tips
+      // Phase 2: Folder slams
       setTimeout(function(){
         folder.style.animation='folderSlam 2s cubic-bezier(.25,.46,.45,.94) forwards';
         setTimeout(function(){folder.style.display='none';},2000);
       },600);
 
-      // Phase 3: Section background pulse
+      // Phase 3: Section pulse
       setTimeout(function(){sec.classList.add('active-pulse');},800);
 
-      // Phase 4: Photos EXPLODE out with stagger
+      // Phase 4: Photos scatter around the edges
       photoEls.forEach(function(p,i){
         setTimeout(function(){
           p.el.style.left=p.scatter.x;
           p.el.style.top=p.scatter.y;
           p.el.classList.add('spilled');
-          // Mini flash per photo
           if(i%2===0){
             flash.style.transition='opacity .12s';
             flash.style.opacity='.15';
             setTimeout(function(){flash.style.opacity='0';flash.style.transition='opacity .2s';},120);
           }
-        },1200+i*400);
+        },1200+i*350);
       });
 
-      // Phase 5: Final shake after all photos land
+      // Phase 5: After photos land — monitor powers on with static
+      var videoDelay=1200+files.length*350+600;
+      setTimeout(function(){
+        monitor.style.opacity='1';
+        monitor.style.animation='monitorFlicker 2s ease forwards';
+        startStatic();
+
+        // After flickering, static clears and video plays
+        setTimeout(function(){
+          stopStatic();
+          recDot.style.opacity='1';
+          vidTs.style.opacity='1';
+          startTimestamp();
+          video.play();
+
+          // One more shake when video starts
+          document.body.style.animation='horrorShake .3s ease';
+          setTimeout(function(){document.body.style.animation='';},400);
+
+          // Red border pulse on monitor
+          monitor.querySelector('div').style.borderColor='#e63946';
+          monitor.querySelector('div').style.boxShadow='0 0 60px rgba(230,57,70,.3),0 0 120px rgba(230,57,70,.1)';
+        },2000);
+      },videoDelay);
+
+      // Phase 6: Final shake
       setTimeout(function(){
         document.body.style.animation='horrorShake .4s ease';
         setTimeout(function(){document.body.style.animation='';},500);
-      },1200+files.length*400+300);
+      },1200+files.length*350+300);
     }
   },{threshold:.25}).observe(sec);
 })();
