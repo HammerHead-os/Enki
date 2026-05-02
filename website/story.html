@@ -496,7 +496,7 @@ body.deep{background-color:#120810}
 }
 .spill-photo.spilled{
   opacity:1;z-index:5;
-  animation:photoLand .8s cubic-bezier(.17,.67,.29,1.2) forwards;
+  animation:photoLand 1.4s cubic-bezier(.17,.67,.29,1.2) forwards;
 }
 .spill-photo:hover{
   z-index:20;border-color:#e63946;
@@ -526,6 +526,7 @@ body.deep{background-color:#120810}
 @keyframes sectionPulse{
   0%{background:#08080e}
   10%{background:#1a0a0e}
+  50%{background:#120810}
   100%{background:#08080e}
 }
 </style>
@@ -593,16 +594,16 @@ body.deep{background-color:#120810}
 
       // Phase 1: Red flash + screen shake
       flash.style.opacity='1';
-      document.body.style.animation='horrorShake .5s ease';
-      setTimeout(function(){flash.style.opacity='0';document.body.style.animation='';},300);
+      document.body.style.animation='horrorShake .7s ease';
+      setTimeout(function(){flash.style.opacity='0';document.body.style.animation='';},500);
 
       // Phase 2: Folder slams and tips
       setTimeout(function(){
-        folder.style.animation='folderSlam 1.2s cubic-bezier(.25,.46,.45,.94) forwards';
-      },200);
+        folder.style.animation='folderSlam 2s cubic-bezier(.25,.46,.45,.94) forwards';
+      },600);
 
       // Phase 3: Section background pulse
-      setTimeout(function(){sec.classList.add('active-pulse');},300);
+      setTimeout(function(){sec.classList.add('active-pulse');},800);
 
       // Phase 4: Photos EXPLODE out with stagger
       photoEls.forEach(function(p,i){
@@ -612,18 +613,18 @@ body.deep{background-color:#120810}
           p.el.classList.add('spilled');
           // Mini flash per photo
           if(i%2===0){
-            flash.style.transition='opacity .08s';
+            flash.style.transition='opacity .12s';
             flash.style.opacity='.15';
-            setTimeout(function(){flash.style.opacity='0';flash.style.transition='opacity .15s';},80);
+            setTimeout(function(){flash.style.opacity='0';flash.style.transition='opacity .2s';},120);
           }
-        },500+i*200);
+        },1200+i*400);
       });
 
       // Phase 5: Final shake after all photos land
       setTimeout(function(){
-        document.body.style.animation='horrorShake .3s ease';
-        setTimeout(function(){document.body.style.animation='';},400);
-      },500+files.length*200+100);
+        document.body.style.animation='horrorShake .4s ease';
+        setTimeout(function(){document.body.style.animation='';},500);
+      },1200+files.length*400+300);
     }
   },{threshold:.25}).observe(sec);
 })();
