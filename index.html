@@ -648,27 +648,9 @@ body.deep{background-color:#120810}
     <p id="finaleType" style="font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:#e63946;letter-spacing:4px;opacity:0;transition:opacity 1.5s;margin-bottom:40px"></p>
 
     <!-- The loop -->
-    <div id="finaleLoop" style="opacity:0;transition:opacity 2s;margin-top:20px">
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-family:'Share Tech Mono',monospace;font-size:.85rem;color:#7a7a90;line-height:2.2">
-        <span style="color:#e63946;font-weight:900">No privacy laws</span>
-        <span>→</span>
-        <span>Data flows freely</span>
-        <span>→</span>
-        <span>Algorithms profile you</span>
-        <span>→</span>
-        <span>Echo chambers form</span>
-        <span>→</span>
-        <span style="color:#e63946;font-weight:900">Rage builds</span>
-        <span>→</span>
-        <span>January 6</span>
-        <span>→</span>
-        <span style="color:#e63946;font-weight:900">No accountability</span>
-        <span>→</span>
-        <span style="color:#e63946;animation:blink 2s infinite">↻ REPEAT</span>
-      </div>
-    </div>
+    <div id="finaleLoop" style="display:none"></div>
 
-    <p id="finaleClose" style="font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:#e63946;letter-spacing:4px;margin-top:50px;opacity:0;transition:opacity 2s;animation:blink 2s infinite">ARE YOU STILL IN CHARGE OF WHAT YOU SEE?</p>
+    <p id="finaleClose" style="display:none"></p>
   </div>
 </section>
 
@@ -743,8 +725,8 @@ body.deep{background-color:#120810}
       // Phase 4: Loop chain appears
       setTimeout(function(){loopEl.style.opacity='1';},4500);
 
-      // Phase 5: Final question
-      setTimeout(function(){closeEl.style.opacity='1';},6500);
+      // Phase 4: Final question
+      setTimeout(function(){closeEl.style.opacity='1';},4500);
     }
   },{threshold:.3}).observe(sec);
 })();
