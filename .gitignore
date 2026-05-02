@@ -1,4 +1,8 @@
 *
 !website/
 !website/**
+!index.html
+!assets/
+!assets/**
+!horror.js
 !.gitignore
