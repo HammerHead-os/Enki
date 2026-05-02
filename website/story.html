@@ -394,10 +394,10 @@ body.deep{background-color:#120810}
   <canvas id="dataCloud" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1"></canvas>
 
   <!-- LEFT FEED -->
-  <div id="feedLeft" style="position:absolute;left:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-right:1px solid rgba(230,57,70,.1)"></div>
+  <div id="feedLeft" style="position:absolute;left:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-right:1px solid rgba(74,144,217,.1)"></div>
 
   <!-- RIGHT FEED -->
-  <div id="feedRight" style="position:absolute;right:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-left:1px solid rgba(74,144,217,.1)"></div>
+  <div id="feedRight" style="position:absolute;right:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-left:1px solid rgba(230,57,70,.1)"></div>
 
   <!-- Center content -->
   <div style="position:relative;z-index:3;text-align:center;padding:60px 20px;max-width:700px">
@@ -1240,8 +1240,8 @@ for(var i=0;i<stepEls.length;i++)(function(el){
     html+='</div>';
     container.innerHTML=html;
   }
-  buildFeed(leftFeed,leftPosts,'#e63946','YOUR LEFT FEED');
-  buildFeed(rightFeed,rightPosts,'#4a90d9','YOUR RIGHT FEED');
+  buildFeed(leftFeed,leftPosts,'#4a90d9','YOUR LEFT FEED');
+  buildFeed(rightFeed,rightPosts,'#e63946','YOUR RIGHT FEED');
 })();
 
 // ══════════════════════════════════════════
