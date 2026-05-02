@@ -1,0 +1,27 @@
+{
+  "_source": "Wikipedia, VentureBeat, MarketWatch, Engadget — compiled from multiple public sources",
+  "_note": "Internet Association member companies over time. IA had ~40 members at peak. Content rephrased for compliance.",
+  "founding_members_2012": [
+    "Amazon", "AOL", "eBay", "Expedia", "Facebook", "Google",
+    "IAC", "LinkedIn", "Monster Worldwide", "Rackspace",
+    "Salesforce", "TripAdvisor", "Yahoo", "Zynga"
+  ],
+  "additional_members_by_2018": [
+    "Airbnb", "Dropbox", "DoorDash", "Etsy", "Glassdoor",
+    "Grubhub", "Handy", "Indeed", "Lyft", "Microsoft",
+    "Netflix", "Pandora", "PayPal", "Pinterest", "Postmates",
+    "Reddit", "Snap Inc", "Spotify", "SurveyMonkey", "Twitter",
+    "Uber", "Zillow Group"
+  ],
+  "departed_before_shutdown": [
+    "Uber", "Microsoft", "Salesforce"
+  ],
+  "key_events": [
+    { "date": "2012-09-19", "event": "Internet Association officially launched with 14 founding members" },
+    { "date": "2014-07-14", "event": "IA contested FCC net neutrality proposal, advocating stronger rules" },
+    { "date": "2015-02-26", "event": "IA praised FCC Open Internet Order" },
+    { "date": "2017-07-12", "event": "IA participated in Day of Action to Save the Internet" },
+    { "date": "2018-09-13", "event": "IA called for federal privacy legislation, released policy principles" },
+    { "date": "2021-12-15", "event": "Internet Association announced dissolution after financial difficulties" }
+  ]
+}

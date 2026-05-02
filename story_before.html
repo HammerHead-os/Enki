@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Brother Is Watching - COMP4462</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Creepster&family=Inter:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:#0c0c10;color:#e0e0e0;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+
+/* overlays */
+.scanlines{pointer-events:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0px,rgba(0,0,0,.03) 1px,transparent 1px,transparent 2px)}
+
+/* shared */
+.step-number{font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:#e63946;letter-spacing:6px;text-transform:uppercase;margin-bottom:10px}
+.step-title{font-size:clamp(2rem,4vw,3.2rem);font-weight:900;color:#f1f1f1;line-height:1.15;margin-bottom:22px}
+.step-title span{color:#e63946}
+.step-body{font-size:1.4rem;color:#b0b0c0;line-height:1.9;margin-bottom:26px}
+.step-body strong{color:#f1f1f1}
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin:20px 0}
+.stat-box{flex:1;min-width:120px;background:#14141e;border:1px solid #2a2a3a;border-radius:10px;padding:20px;text-align:center;transition:border-color .3s}
+.stat-box:hover{border-color:#e63946}
+.stat-val{font-size:2rem;font-weight:900;color:#e63946;font-family:'Share Tech Mono',monospace}
+.stat-label{font-size:1.4rem;color:#7a7a90;text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+
+/* section dividers */
+.section-divider{height:4px;background:linear-gradient(90deg,transparent,#e63946,transparent);margin:0;opacity:.3}
+
+/* bridge */
+.bridge{text-align:center;padding:50px 24px;font-family:'Share Tech Mono',monospace;color:#e63946;
+  font-size:clamp(1rem,2vw,1.25rem);letter-spacing:3px;background:#101018}
+
+/* ═══ HERO ═══ */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 40%,#1c0a0a 0%,#0c0c10 70%)}
+.hero-eyes{width:220px;height:auto;margin-bottom:20px;opacity:.9;filter:drop-shadow(0 0 40px rgba(255,0,0,.4))}
+.hero-tagline{font-family:'Creepster',cursive;font-size:clamp(1rem,3vw,1.6rem);color:#e63946;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;opacity:.8}
+.hero-title{font-weight:900;font-size:clamp(2.5rem,7vw,5rem);line-height:1.05;color:#f1f1f1;max-width:800px;padding:0 20px}
+.hero-title span{color:#e63946}
+.hero-sub{font-size:clamp(1rem,2.2vw,1.25rem);color:#9a9ab0;max-width:640px;margin-top:18px;line-height:1.7;padding:0 20px}
+.hero-scroll{margin-top:50px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bob 2s ease-in-out infinite;cursor:pointer}
+.hero-scroll span{font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#e63946;letter-spacing:3px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+
+/* ═══ SECTION 1 ═══ */
+.s1-wrap{display:flex;min-height:200vh;position:relative;background:#0e0e16}
+.s1-left{width:50%;padding:80px 60px;display:flex;flex-direction:column;justify-content:center}
+.s1-right{width:50%;height:100vh;position:sticky;top:0;overflow:hidden;background:#0a0a12}
+.s1-photo{position:absolute;width:100%;height:100%;object-fit:cover;filter:grayscale(.3) brightness(.85);z-index:2}
+#s1Canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none}
+#s1Treemap{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;opacity:0;transition:opacity .8s ease}
+#s1Treemap.visible{opacity:1;z-index:5}
+.s1-scroll-hint{font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#e63946;letter-spacing:2px;margin-top:20px;animation:bob 2s ease-in-out infinite;opacity:.7}
+
+/* treemap tooltip */
+.tm-tt{position:fixed;background:#181824;border:1px solid #e63946;border-radius:8px;padding:10px 14px;
+  font-size:1.4rem;color:#ccc;pointer-events:none;z-index:200;max-width:260px;line-height:1.5;display:none}
+
+/* ═══ SCROLLY SECTION ═══ */
+.scrolly-wrap{display:flex;position:relative;background:#0c0c10}
+.scrolly-text{width:50%;position:relative;z-index:2}
+.scrolly-viz{width:50%;position:sticky;top:0;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.step-panel{padding:50px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+#sanddance-container{width:100%;height:100%;position:relative;overflow:hidden}
+#sanddance-container svg{display:block}
+.sd-tooltip{position:fixed;background:#181824;border:1px solid #e63946;border-radius:8px;padding:10px 14px;
+  font-size:1.3rem;color:#ccc;pointer-events:none;z-index:100;max-width:320px;line-height:1.5;display:none}
+.sd-tooltip .tt-title{color:#e63946;font-weight:700;margin-bottom:4px}
+.sd-legend{position:absolute;bottom:20px;left:20px;display:flex;gap:16px;font-size:1.5rem;color:#9a9ab0;
+  font-family:'Share Tech Mono',monospace;background:rgba(16,16,24,.85);padding:8px 14px;border-radius:8px;border:1px solid #2a2a3a}
+.sd-legend-item{display:flex;align-items:center;gap:6px}
+.sd-legend-swatch{width:12px;height:12px;border-radius:3px}
+.sd-view-label{position:absolute;top:20px;left:20px;font-family:'Share Tech Mono',monospace;
+  font-size:1.4rem;color:#e63946;letter-spacing:2px;background:rgba(16,16,24,.85);padding:6px 12px;border-radius:6px;border:1px solid #2a2a3a}
+
+/* timeline */
+.timeline{position:relative;padding-left:30px;margin:20px 0}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#e63946,#2a1520)}
+.tl-item{position:relative;margin-bottom:22px;padding-left:20px}
+.tl-item::before{content:'';position:absolute;left:-26px;top:6px;width:12px;height:12px;border-radius:50%;background:#e63946;border:2px solid #0c0c10}
+.tl-date{font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#e63946;margin-bottom:3px}
+.tl-text{font-size:1.4rem;color:#b0b0c0;line-height:1.5}
+.tl-text em{color:#f4a261;font-style:normal;font-weight:600}
+
+/* footer */
+.footer{text-align:center;padding:60px 24px 40px;border-top:1px solid #2a2a3a;background:#0c0c10}
+.footer-title{font-family:'Creepster',cursive;font-size:clamp(1.5rem,4vw,2.5rem);color:#e63946;margin-bottom:12px}
+.footer-sub{color:#7a7a90;font-size:1.4rem;line-height:1.6;max-width:600px;margin:0 auto}
+.footer-credits{margin-top:30px;font-size:1.4rem;color:#4a4a5a;font-family:'Share Tech Mono',monospace;letter-spacing:1px}
+.footer-credits a{color:#6a6a7a;text-decoration:none}
+.footer-credits a:hover{color:#e63946}
+
+/* ═══ POKEMON CARD MODAL ═══ */
+.card-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
+  display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75)}
+.card-overlay.active{display:flex}
+.card-overlay .card-glitch{position:absolute;top:0;left:0;width:100%;height:100%;
+  background:url('assets/glitch_overlay.gif') center/cover;opacity:.12;pointer-events:none}
+.card-box{position:relative;width:370px;
+  background:linear-gradient(145deg,#1a1a2e,#12121e,#1a0a14);
+  border:2px solid #e63946;border-radius:16px;overflow:hidden;
+  animation:cardIn .5s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 60px rgba(230,57,70,.3),0 0 120px rgba(230,57,70,.1)}
+@keyframes cardIn{0%{transform:scale(.3) rotateY(90deg);opacity:0}100%{transform:scale(1) rotateY(0);opacity:1}}
+.card-close{position:absolute;top:12px;right:14px;width:32px;height:32px;
+  background:rgba(230,57,70,.2);border:1px solid #e63946;border-radius:50%;
+  color:#e63946;font-size:18px;cursor:pointer;z-index:2;
+  display:flex;align-items:center;justify-content:center;transition:background .2s;line-height:1}
+.card-close:hover{background:#e63946;color:#fff}
+.card-header{background:linear-gradient(135deg,#e63946,#a8201a);padding:18px 20px 14px}
+.card-name{font-size:1.5rem;font-weight:900;color:#fff}
+.card-tag{font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:rgba(255,255,255,.7);letter-spacing:2px;margin-top:2px}
+.card-img{width:100%;height:120px;background:#0e0e16;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #2a2a3a;position:relative;flex-direction:column;gap:4px}
+.card-amount{font-family:'Share Tech Mono',monospace;font-size:2rem;font-weight:900;color:#e63946;text-shadow:0 0 30px rgba(230,57,70,.5)}
+.card-amount-sub{font-size:1.4rem;color:#7a7a90;font-family:'Share Tech Mono',monospace}
+.card-stats{padding:20px;display:flex;flex-direction:column;gap:4px}
+.card-stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a2a}
+.card-stat-label{font-size:1.4rem;color:#7a7a90;font-family:'Share Tech Mono',monospace}
+.card-stat-val{font-size:1.3rem;color:#f1f1f1;font-weight:600}
+.card-bar{height:6px;background:#1a1a2a;border-radius:3px;margin-top:8px;overflow:hidden}
+.card-bar-fill{height:100%;background:linear-gradient(90deg,#e63946,#f4a261);border-radius:3px;transition:width .8s ease}
+
+/* ═══ ECHO CHAMBER CHAIN ═══ */
+.chain-step{
+  background:#12121e;border:1px solid #2a2a3a;border-radius:14px;
+  padding:28px 32px;margin:0 auto;max-width:640px;position:relative;
+  opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease,border-color .5s;
+}
+.chain-step.visible{opacity:1;transform:translateY(0)}
+.chain-step:hover{border-color:#e63946}
+.chain-step.chain-loop{border-color:#e63946;background:linear-gradient(135deg,#1a0a14,#12121e)}
+.chain-icon{font-size:2rem;margin-bottom:8px}
+.chain-num{
+  position:absolute;top:16px;right:20px;font-family:'Share Tech Mono',monospace;
+  font-size:2rem;font-weight:900;color:rgba(230,57,70,.15);
+}
+.chain-title{font-size:1.4rem;font-weight:900;color:#f1f1f1;margin-bottom:8px}
+.chain-desc{font-size:1.3rem;color:#9a9ab0;line-height:1.7}
+.chain-desc strong{color:#f1f1f1}
+.chain-desc a{color:#e63946;text-decoration:none}
+.chain-desc a:hover{text-decoration:underline}
+.chain-arrow{
+  text-align:center;font-size:1.5rem;color:#e63946;margin:12px 0;opacity:.4;
+  font-family:'Share Tech Mono',monospace;
+}
+
+@media(max-width:900px){
+  .s1-wrap,.scrolly-wrap{flex-direction:column}
+  .s1-left,.s1-right,.scrolly-text,.scrolly-viz{width:100%!important}
+  .s1-right,.scrolly-viz{height:60vh!important;position:relative!important}
+  .step-panel{padding:30px 20px;min-height:auto}
+  .chain-step{padding:20px}
+}
+/* CREEPY OVERLAYS */
+.fog-overlay{pointer-events:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;opacity:.3;background:url(assets/fog.gif) center/cover}
+.cobweb-tl{position:absolute;top:0;left:0;width:280px;height:280px;pointer-events:none;z-index:5;opacity:.7}
+.cobweb-tr{position:absolute;top:0;right:0;width:280px;height:280px;pointer-events:none;z-index:5;opacity:.7}
+.spider-hang{position:absolute;z-index:6;pointer-events:none;width:100px;opacity:.9}
+.scratches-overlay{pointer-events:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;opacity:.2;background:url(assets/scratches.png) center/cover}
+#bodyCount{position:fixed;bottom:20px;right:20px;z-index:9990;font-family:Share Tech Mono,monospace;background:rgba(10,10,16,.92);border:2px solid #e63946;border-radius:12px;padding:14px 20px;color:#e63946;display:none;backdrop-filter:blur(8px)}
+#bodyCount .bc-label{font-size:1.3rem;color:#7a7a90;letter-spacing:2px}
+#bodyCount .bc-num{font-size:2.5rem;font-weight:900}
+.notif{position:fixed;right:-450px;z-index:9991;background:#14141e;border:1px solid #e63946;border-radius:12px;padding:16px 22px;max-width:380px;font-family:Share Tech Mono,monospace;font-size:1.3rem;color:#b0b0c0;transition:right .6s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 30px rgba(230,57,70,.25)}
+.notif.show{right:20px}
+.notif .notif-icon{margin-right:8px}
+.cam-frame{position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none;border:2px solid rgba(230,57,70,.25)}
+.cam-ts{position:absolute;bottom:10px;left:14px;font-family:Share Tech Mono,monospace;font-size:1rem;color:rgba(230,57,70,.5);z-index:7;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div id="bodyCount"><div class="bc-label">BILLS KILLED</div><div class="bc-num" id="bcNum">0</div></div>
+<div class="notif" id="notif1" style="top:100px"><span class="notif-icon">⚠️</span> Your data was shared with 47 advertisers</div>
+<div class="notif" id="notif2" style="top:200px"><span class="notif-icon">📍</span> Your location was accessed 12 times today</div>
+<div class="notif" id="notif3" style="top:300px"><span class="notif-icon">🔴</span> Face detected. Profile updated.</div>
+
+<!-- CARD MODAL -->
+<div class="card-overlay" id="cardOverlay">
+  <div class="card-glitch"></div>
+  <div class="card-box">
+    <button class="card-close" id="cardClose">✕</button>
+    <div class="card-header"><div class="card-name" id="cardName"></div><div class="card-tag" id="cardTag"></div></div>
+    <div class="card-img"><div class="card-amount" id="cardAmount"></div><div class="card-amount-sub" id="cardSub"></div></div>
+    <div class="card-stats" id="cardStats"></div>
+  </div>
+</div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <div class="fog-overlay"></div>
+  <img src="assets/cobweb_top_left.png" class="cobweb-tl">
+  <img src="assets/cobweb_top_right.png" class="cobweb-tr">
+  <img src="assets/dangling_spider.gif" class="spider-hang" style="top:0;left:50%;margin-left:-20px">
+  <img src="assets/blinking_eyes.gif" alt="" class="hero-eyes">
+  <div class="hero-tagline">▓▒░ Big Brother is watching ░▒▓</div>
+  <h1 class="hero-title">Do You Know <span>Who's Killing</span> Your Privacy?</h1>
+  <p class="hero-sub">Between 2016 and 2021, a single lobbying group funded by the biggest names in tech systematically opposed nearly every privacy bill in Illinois.</p>
+  <div class="hero-scroll" onclick="document.getElementById('sec1').scrollIntoView({behavior:'smooth'})">
+    <span>SCROLL IF YOU DARE</span><div class="arrow" style="font-size:1.5rem;color:#e63946">⌄</div>
+  </div>
+</section>
+
+<div class="blood-divider"></div>
+
+<!-- ═══════════ SECTION 1: MEET THE IA ═══════════ -->
+<section id="sec1" class="s1-wrap">
+  <img src="assets/cobweb_bottom_left.png" style="position:absolute;bottom:0;left:0;width:280px;opacity:.5;pointer-events:none;z-index:5">
+  <img src="assets/dangling_spider.gif" class="spider-hang" style="top:10px;right:40px">
+  <img src="assets/blinking_eyes_small.gif" style="position:absolute;bottom:30px;right:20px;width:160px;opacity:.5;pointer-events:none;z-index:5">
+  <div class="scratches-overlay"></div>
+  <div class="s1-left">
+    <div class="step-number">01 - The Front</div>
+    <h2 class="step-title">Meet the <span>Internet Association</span></h2>
+    <p class="step-body">Founded in 2012, the Internet Association was a Washington D.C. trade group representing <strong>~40 of the most powerful internet companies on Earth</strong>. Amazon. Google. Facebook. Uber. Airbnb. Netflix. Twitter.<br><br>Their stated mission? "Represent the interests of America's leading internet companies." Their actual playbook in Illinois? <strong>Oppose every bill that would give you control over your own data.</strong></p>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val">~40</div><div class="stat-label">Member Companies</div></div>
+      <div class="stat-box"><div class="stat-val">$13.9M</div><div class="stat-label">Federal Lobbying</div></div>
+      <div class="stat-box"><div class="stat-val">26</div><div class="stat-label">IL Bills Targeted</div></div>
+    </div>
+    <p class="s1-scroll-hint">↓ Scroll to reveal who they really are</p>
+    <p style="font-size:1.3rem;color:#9a9ab0;margin-top:8px;font-family:'Share Tech Mono',monospace">Hover the treemap tiles on the right to see each company's lobbying spend.</p>
+  </div>
+  <div class="s1-right" id="s1Right">
+    <img src="assets/creepy_censored.gif" alt="" class="s1-photo" id="s1Photo">
+    <canvas id="s1Canvas"></canvas>
+    <div id="s1Treemap"></div>
+  </div>
+  <div class="tm-tt" id="tmTT"></div>
+</section>
+
+<div class="blood-divider"></div>
+
+<!-- ═══════════ SECTION 1B: WHAT IS LOBBYING? ═══════════ -->
+<section style="background:#101018;padding:0;overflow:hidden;position:relative">
+  <div style="display:flex;min-height:100vh">
+    <div style="width:50%;padding:80px 60px;display:flex;flex-direction:column;justify-content:center">
+  <div style="position:absolute;top:20px;left:20px;font-size:7rem;opacity:.3;pointer-events:none">💀</div>
+  <div style="position:absolute;bottom:30px;right:30px;font-size:6rem;opacity:.25;pointer-events:none">&#x1F9B4;</div>
+  <div style="position:absolute;top:50%;right:48%;font-size:5rem;opacity:.2;pointer-events:none;transform:rotate(15deg)">☠️</div>
+      <div class="step-number">01b - The Playbook</div>
+      <h2 class="step-title">But Wait - What is <span>Lobbying?</span></h2>
+      <p class="step-body">
+        Lobbying is the act of trying to influence government decisions - by hiring professionals who testify at hearings and push for or against specific bills.
+        <br><br>
+        It's legal. It's common. And it's <strong>extremely effective</strong>.
+        <br><br>
+        The IA deployed <strong>up to 22 lobbyists</strong> at peak, spending <strong>$2.4M in 2017 alone</strong>. In Illinois, their lobbyists testified against bill after bill.
+        <br><br>
+        Every "OPP" in the dataset is a <strong>real person in a real hearing room</strong>, saying "we oppose this" on behalf of Big Tech.
+      </p>
+      <div class="stat-row" style="max-width:500px">
+        <div class="stat-box"><div class="stat-val">22</div><div class="stat-label">Peak Lobbyists</div></div>
+        <div class="stat-box"><div class="stat-val">$2.4M</div><div class="stat-label">Peak Spend</div></div>
+        <div class="stat-box"><div class="stat-val">73</div><div class="stat-label">IL Testimonies</div></div>
+      </div>
+    </div>
+    <div style="width:50%;display:flex;align-items:center;justify-content:center;position:relative;background:#0e0e18;cursor:none" id="revealWrap">
+      <canvas id="cvsNormal" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1"></canvas>
+      <canvas id="cvsDevil" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;clip-path:circle(0px at 50% 50%)"></canvas>
+      <div id="cursorRing" style="position:absolute;width:160px;height:160px;border:2px solid rgba(230,57,70,.5);border-radius:50%;pointer-events:none;z-index:3;display:none;box-shadow:0 0 30px rgba(230,57,70,.25);transform:translate(-50%,-50%)"></div>
+      <div id="revealHint" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:rgba(230,57,70,.6);letter-spacing:2px;z-index:4;pointer-events:none">HOVER TO REVEAL THE TRUTH</div>
+    </div>
+  </div>
+</section>
+
+<div class="blood-divider"></div>
+
+<!-- ═══════════ SECTION 1C: THE MAP ═══════════ -->
+<section style="background:#0c0c10;padding:80px 40px;position:relative;overflow:hidden">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="position:absolute;top:15px;right:15px;font-size:6rem;opacity:.25;pointer-events:none">&#x1F577;</div>
+    <div style="position:absolute;bottom:20px;left:20px;font-size:5rem;opacity:.25;pointer-events:none">💀</div>
+    <div style="position:absolute;top:40%;left:10px;font-size:4rem;opacity:.2;pointer-events:none;transform:rotate(-10deg)">&#x1F9B4;</div>
+    <div class="step-number">01c - The Map</div>
+    <h2 class="step-title">Coincidence? <span>They're Already There.</span></h2>
+    <p class="step-body" style="max-width:720px;margin-bottom:12px">
+      The IA didn't set up offices randomly. They planted themselves in the <strong>exact states pushing the most privacy bills</strong>. Hover over any state to see its bill count and whether the IA had an office there.
+    </p>
+    <p class="step-body" style="max-width:720px;margin-bottom:30px;font-size:1.3rem;color:#9a9ab0">
+      Darker states = more privacy bills introduced in 2019. <span style="color:#e63946">Red pulsing pins</span> = IA office locations.
+    </p>
+    <div id="usMapContainer" style="background:#161622;border:1px solid #2a2a3a;border-radius:12px;padding:20px;position:relative;overflow:hidden">
+      <svg id="usMap"></svg>
+      <div id="mapTooltip" style="position:absolute;background:#181824;border:1px solid #e63946;border-radius:8px;padding:10px 14px;font-size:1.4rem;color:#ccc;pointer-events:none;display:none;max-width:240px;line-height:1.5;z-index:10"></div>
+    </div>
+    <!-- Legend -->
+    <div style="display:flex;gap:30px;align-items:center;margin-top:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;border-radius:50%;background:#e63946;box-shadow:0 0 8px #e63946"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#b0b0c0">IA Office</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:100px;height:12px;border-radius:3px;background:linear-gradient(90deg,#ffffb2,#fecc5c,#fd8d3c,#e31a1c);border:1px solid #3a3a4a"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#b0b0c0">Privacy bills (0 → 25)</span>
+      </div>
+    </div>
+    <p class="step-body" style="max-width:720px;margin-top:20px;color:#9a9ab0;font-style:italic">
+      4 out of 5 IA state offices sit in the top 4 states for privacy legislation. That's not a coincidence - it's a strategy.
+    </p>
+    <p class="step-body" style="max-width:720px;margin-top:8px;color:#7a7a90;font-size:1.5rem">
+      Source: <a href="https://www.ncsl.org/technology-and-communication/2021-consumer-data-privacy-legislation" style="color:#e63946" target="_blank">NCSL</a> · <a href="https://en.wikipedia.org/wiki/Internet_Association" style="color:#e63946" target="_blank">Wikipedia</a>
+    </p>
+  </div>
+</section>
+
+<div class="blood-divider"></div>
+<div class="bridge">Now you know who they are, how they operate, and where they strike. But what did they actually kill?</div>
+<div class="blood-divider"></div>
+
+<!-- ═══════════ SECTION 2: SCROLLYTELLING ═══════════ -->
+<div class="scrolly-wrap" style="position:relative">
+  <img src="assets/cobweb_top_right.png" style="position:absolute;top:0;right:0;width:250px;opacity:.5;pointer-events:none;z-index:5">
+  <img src="assets/cobweb_bottom_right.png" style="position:absolute;bottom:0;right:0;width:250px;opacity:.5;pointer-events:none;z-index:5">
+  <img src="assets/dangling_spider.png" style="position:absolute;top:0;left:48%;width:70px;opacity:.7;pointer-events:none;z-index:5">
+  <img src="assets/blinking_eyes_small.gif" style="position:absolute;top:50px;left:20px;width:140px;opacity:.5;pointer-events:none;z-index:5">
+  <div class="scrolly-text">
+    <div class="step-panel" data-view="grid-all">
+      <div class="step-number">02 - The Bills</div>
+      <h2 class="step-title">26 Bills. <span>26 Squares.</span></h2>
+      <p class="step-body">Each square represents one of <strong>26 unique bills</strong> the IA took a position on in Illinois. Hover any square for details. Click a square to open its full profile. Scroll to watch them split.</p>
+    </div>
+    <div class="step-panel" data-view="group-position">
+      <div class="step-number">03 - The Stance</div>
+      <h2 class="step-title">Oppose <span>Everything</span></h2>
+      <p class="step-body">Watch the squares split. <strong>Red = Opposed. Green = Supported.</strong><br><br>The IA opposed <strong>19 out of 26 bills</strong>. The few they supported? Tax exemptions for online marketplaces, ride-share deregulation, and car-sharing laws. Things that directly benefited their member companies.<br><br>Everything that would give <strong>you</strong> more control over your data? Opposed.</p>
+    </div>
+    <div class="step-panel" data-view="group-outcome">
+      <div style="position:absolute;top:-10px;right:10px;font-size:6rem;opacity:.255;pointer-events:none">💀</div>
+      <div style="position:absolute;top:0;right:0;font-size:7rem;opacity:.3;pointer-events:none">☠️</div>
+      <div style="position:absolute;bottom:0;left:0;font-size:6rem;opacity:.25;pointer-events:none">💀</div>
+      <div class="step-number">04 - The Kill List</div>
+      <h2 class="step-title">73% of Bills <span>Died on Command</span></h2>
+      <p class="step-body">Now watch them split by outcome. <strong>Failed vs. Enacted.</strong><br><br>Of the 19 bills they opposed, <strong>15 failed</strong>. Only 4 survived. The Right to Know Act? Killed three sessions in a row. Geolocation Privacy? Killed twice.</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val">73.1%</div><div class="stat-label">Alignment Rate</div></div>
+        <div class="stat-box"><div class="stat-val">20</div><div class="stat-label">Bills Failed</div></div>
+        <div class="stat-box"><div class="stat-val">6</div><div class="stat-label">Bills Enacted</div></div>
+      </div>
+    </div>
+    <div class="step-panel" data-view="group-topic">
+      <div class="step-number">05 - The Targets</div>
+      <h2 class="step-title">Privacy Bills Were <span>The Target</span></h2>
+      <p class="step-body">Grouped by topic, the pattern is unmistakable. <strong>Privacy & Data bills</strong> were overwhelmingly opposed and killed.<br><br>The only category where the IA mostly <strong>supported</strong> legislation? Sharing Economy - laws that helped Uber, Airbnb, and Lyft operate with fewer restrictions.</p>
+    </div>
+    <div class="step-panel" data-view="scatter-aligned">
+      <div class="step-number">06 - The Result</div>
+      <h2 class="step-title">IA Got Its Way. <span>73% of the Time.</span></h2>
+      <p class="step-body">The green squares are the bills that defied the IA. The red ones? They got exactly what they wanted. The data doesn't lie.</p>
+    </div>
+  </div>
+  <div class="scrolly-viz">
+    <div id="sanddance-container">
+      <div class="sd-view-label" id="viewLabel">ALL BILLS</div>
+      <svg id="sanddance-svg"></svg>
+      <div class="sd-legend" id="sdLegend"></div>
+    </div>
+    <div class="sd-tooltip" id="sdTooltip"></div>
+  </div>
+</div>
+
+<div class="blood-divider"></div>
+
+<!-- ═══════════ THE ECHO CHAMBER: PHONE + WEBCAM ═══════════ -->
+<section id="echoSection" style="background:#06060c;position:relative;overflow:hidden;min-height:100vh;display:flex;align-items:center;justify-content:center">
+  <img src="assets/cobweb_top_left.png" style="position:absolute;top:0;left:0;width:300px;opacity:.45;pointer-events:none;z-index:0">
+  <img src="assets/cobweb_bottom_right.png" style="position:absolute;bottom:0;right:0;width:300px;opacity:.45;pointer-events:none;z-index:0">
+  <img src="assets/blinking_eyes_small.gif" style="position:absolute;top:40px;right:40px;width:180px;opacity:.5;pointer-events:none;z-index:0">
+  <img src="assets/blinking_eyes_small.gif" style="position:absolute;bottom:40px;left:40px;width:180px;opacity:.5;pointer-events:none;z-index:0">
+  <img src="assets/dangling_spider.gif" style="position:absolute;top:0;right:20%;width:80px;opacity:.8;pointer-events:none;z-index:0">
+  <img src="assets/glitch_overlay.gif" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:.1;pointer-events:none;z-index:0;mix-blend-mode:screen">
+
+  <!-- Floating data tags -->
+  <canvas id="dataCloud" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1"></canvas>
+
+  <!-- LEFT FEED -->
+  <div id="feedLeft" style="position:absolute;left:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-right:1px solid rgba(230,57,70,.1)"></div>
+
+  <!-- RIGHT FEED -->
+  <div id="feedRight" style="position:absolute;right:0;top:0;width:22%;height:100%;z-index:2;overflow:hidden;opacity:.6;border-left:1px solid rgba(74,144,217,.1)"></div>
+
+  <!-- Center content -->
+  <div style="position:relative;z-index:3;text-align:center;padding:60px 20px;max-width:700px">
+    <div class="step-number" style="text-align:center">07 // The Echo Chamber</div>
+    <h2 class="step-title" style="text-align:center;font-size:clamp(2.2rem,4vw,3.4rem);margin-bottom:10px">They Didn't Just Kill Bills.<br><span>They Built This.</span></h2>
+    <p style="color:#9a9ab0;font-size:1.3rem;margin-bottom:8px">Allow camera access to see yourself being watched.</p>
+    <p style="color:#5a5a6a;font-size:1.4rem;margin-bottom:30px;font-family:'Share Tech Mono',monospace">The scrolling feeds on each side show what the algorithm wants you to see.</p>
+
+    <div style="position:absolute;top:10%;left:8%;font-size:3rem;opacity:.12;pointer-events:none;animation:floatSkull 6s ease-in-out infinite">💀</div>
+    <div style="position:absolute;top:60%;right:8%;font-size:6rem;opacity:.25;pointer-events:none;animation:floatSkull 8s ease-in-out infinite reverse">☠️</div>
+    <div style="position:absolute;bottom:15%;left:12%;font-size:5rem;opacity:.2;pointer-events:none;animation:floatSkull 7s ease-in-out infinite">&#x1F9B4;</div>
+    <div style="position:absolute;top:30%;right:15%;font-size:5rem;opacity:.2;pointer-events:none;animation:floatSkull 5s ease-in-out infinite reverse">&#x1F577;</div>
+    <div style="position:absolute;bottom:25%;right:25%;font-size:6rem;opacity:.25;pointer-events:none;animation:floatSkull 9s ease-in-out infinite">&#x1F9B4;</div>
+    <div style="position:absolute;top:75%;left:25%;font-size:5rem;opacity:.25;pointer-events:none;animation:floatSkull 6.5s ease-in-out infinite reverse">💀</div>
+    <!-- Phone frame -->
+    <div id="phoneFrame" style="width:280px;height:500px;margin:0 auto;border-radius:36px;border:4px solid #3a3a50;background:#111;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(230,57,70,.15),0 0 120px rgba(0,0,0,.5)">
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#111;border-radius:0 0 16px 16px;z-index:5"></div>
+      <video id="camFeed" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;filter:contrast(1.1) saturate(.8);transform:scaleX(-1)"></video>
+      <div id="camFallback" style="display:none;width:100%;height:100%;background:radial-gradient(#1a1a2e,#06060c);position:absolute;top:0;left:0;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <div style="font-size:4rem;margin-bottom:10px">👁</div>
+          <div style="font-family:'Share Tech Mono',monospace;color:#e63946;font-size:1.4rem;letter-spacing:2px">CAMERA BLOCKED</div>
+          <div style="color:#5a5a6a;font-size:1.4rem;margin-top:4px">But they're still watching.</div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0px,rgba(0,0,0,.05) 1px,transparent 1px,transparent 3px)"></div>
+      <div style="position:absolute;top:36px;right:16px;z-index:4;display:flex;align-items:center;gap:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#e63946;animation:blink 1s infinite"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:#e63946;letter-spacing:1px">REC</span>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;width:100%;z-index:4;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,.85))">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:#e63946;letter-spacing:1px;margin-bottom:4px">COLLECTING...</div>
+        <div id="phoneDataScroll" style="font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:#7a7a90;line-height:1.6;max-height:80px;overflow:hidden"></div>
+      </div>
+    </div>
+      <!-- Surveillance frame -->
+      <div class="cam-frame"></div>
+      <div class="cam-ts" id="camTs"></div>
+
+    <!-- Text below phone -->
+    <div style="max-width:620px;margin:40px auto 0">
+      <p style="font-size:1.3rem;color:#f1f1f1;font-weight:900;line-height:1.5;margin-bottom:20px">
+        No privacy law ➜ your data flows freely ➜ algorithms profile you ➜ you only see what confirms your beliefs ➜ echo chamber ➜ polarization
+      </p>
+      <p style="font-size:1.4rem;color:#b0b0c0;line-height:1.8;margin-bottom:24px">
+        Americans with consistently ideological views <strong style="color:#f1f1f1">doubled from 10% to 21%</strong> in two decades.
+        Facebook's own internal research showed its algorithm amplifies divisive content because anger drives engagement.
+        The IA spent <strong style="color:#f1f1f1">$13.9M</strong> making sure the laws that could have stopped this never passed.
+      </p>
+      <p style="font-size:1.3rem;color:#9a9ab0;line-height:1.5">
+        Sources: <a href="https://www.pewresearch.org/politics/2014/06/12/political-polarization-in-the-american-public/" style="color:#7a7a90" target="_blank">Pew Research</a> ·
+        <a href="https://www.pnas.org/doi/10.1073/pnas.2023301118" style="color:#7a7a90" target="_blank">PNAS 2021</a> ·
+        <a href="https://www.wsj.com/articles/the-facebook-files-11631713039" style="color:#7a7a90" target="_blank">WSJ Facebook Files</a>
+      </p>
+    </div>
+
+    <!-- Final line -->
+    <div style="margin-top:60px">
+      <p style="font-family:'Creepster',cursive;font-size:clamp(1.8rem,4vw,3.2rem);color:#e63946;margin-bottom:14px">"Big Brother is watching..."</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#e63946;letter-spacing:4px;animation:blink 2s infinite">ARE YOU STILL IN CHARGE OF WHAT YOU SEE?</p>
+    </div>
+  </div>
+</section>
+
+<style>
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes floatSkull{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-15px) rotate(5deg)}}
+@keyframes floatSkull{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-15px) rotate(3deg)}50%{transform:translateY(5px) rotate(-2deg)}75%{transform:translateY(-8px) rotate(1deg)}}
+@keyframes feedScroll{0%{transform:translateY(0)}100%{transform:translateY(-66.66%)}}
+</style>
+
+<div class="blood-divider"></div>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<section class="footer" style="position:relative;overflow:hidden">
+  <div style="position:relative">
+  <img src="assets/cobweb_bottom_left.png" style="position:absolute;bottom:0;left:0;width:220px;opacity:.45;pointer-events:none">
+  <img src="assets/cobweb_bottom_right.png" style="position:absolute;bottom:0;right:0;width:220px;opacity:.45;pointer-events:none">
+  <img src="assets/blinking_eyes.gif" style="display:block;margin:0 auto 20px;width:220px;opacity:.6">
+  </div>
+  <div class="footer-credits">COMP4462 · HKUST · Data Visualization<br>Sources:
+    <a href="https://www.opensecrets.org">OpenSecrets</a> ·
+    <a href="https://www.ilga.gov/legislation/">IL General Assembly</a> ·
+    <a href="https://en.wikipedia.org/wiki/Internet_Association">Wikipedia</a> ·
+    <a href="https://www.ncsl.org">NCSL</a> ·
+    <a href="https://www.statista.com/statistics/1035942/amount-spent-internet-sector-lobbying-usa/">Statista</a> ·
+    <a href="https://www.pnas.org/doi/10.1073/pnas.2023301118">PNAS</a> ·
+    <a href="https://www.pewresearch.org/politics/2014/06/12/political-polarization-in-the-american-public/">Pew Research</a> ·
+    <a href="https://www.wsj.com/articles/the-facebook-files-11631713039">WSJ Facebook Files</a>
+  </div>
+</section>
+
+<script>
+// ══════════════════════════════════════════
+// CARD MODAL
+// ══════════════════════════════════════════
+var cardOverlay = document.getElementById('cardOverlay');
+document.getElementById('cardClose').onclick = closeCard;
+cardOverlay.onclick = function(e){ if(e.target===cardOverlay) closeCard(); };
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeCard(); });
+
+function openCard(d){
+  document.getElementById('cardName').textContent = d.bill + ' - ' + d.title;
+  document.getElementById('cardTag').textContent = d.session;
+  document.getElementById('cardAmount').textContent = d.status === 'failed' ? '\u2717 FAILED' : '\u2713 ENACTED';
+  document.getElementById('cardAmount').style.color = d.status === 'failed' ? '#e63946' : '#2a9d8f';
+  document.getElementById('cardSub').textContent = d.topic;
+  document.getElementById('cardStats').innerHTML =
+    '<div class="card-stat-row"><span class="card-stat-label">POSITION</span><span class="card-stat-val" style="color:'+(d.pos==='OPP'?'#e63946':'#2a9d8f')+'">'+(d.pos==='OPP'?'OPPOSED':'SUPPORTED')+'</span></div>'+
+    '<div class="card-stat-row"><span class="card-stat-label">OUTCOME</span><span class="card-stat-val" style="color:'+(d.status==='failed'?'#e63946':'#f4a261')+'">'+(d.status==='failed'?'KILLED':'ENACTED')+'</span></div>'+
+    '<div class="card-stat-row"><span class="card-stat-label">ALIGNED?</span><span class="card-stat-val" style="color:'+(d.aligned?'#e63946':'#f4a261')+'">'+(d.aligned?'YES - IA got its way':'NO - IA overruled')+'</span></div>'+
+    '<div class="card-stat-row"><span class="card-stat-label">TOPIC</span><span class="card-stat-val">'+d.topic+'</span></div>'+
+    '<div class="card-stat-row"><span class="card-stat-label">SESSION</span><span class="card-stat-val">'+d.session+'</span></div>';
+  cardOverlay.classList.add('active');
+}
+function closeCard(){ cardOverlay.classList.remove('active'); }
+
+// ══════════════════════════════════════════
+// SECTION 1: Photo → Particles → Treemap
+// ══════════════════════════════════════════
+(function(){
+var MEMBERS = [
+  {c:"Facebook/Meta",a:19.68,m:1},{c:"Amazon",a:18.72,m:1},{c:"Alphabet/Google",a:8.85,m:1},
+  {c:"Apple",a:6.65,m:0},{c:"Microsoft",a:9.84,m:1},{c:"Salesforce",a:4.12,m:1},
+  {c:"PayPal",a:3.98,m:1},{c:"Uber",a:2.41,m:1},{c:"Expedia",a:2.18,m:1},
+  {c:"DoorDash",a:1.86,m:1},{c:"Airbnb",a:1.76,m:1},{c:"Lyft",a:1.62,m:1},
+  {c:"Twitter",a:1.52,m:1},{c:"eBay",a:1.36,m:1},{c:"Zillow",a:1.24,m:1},
+  {c:"Netflix",a:1.08,m:1},{c:"Snap Inc",a:0.84,m:1},{c:"Spotify",a:0.68,m:1},
+  {c:"Pinterest",a:0.52,m:1},{c:"Etsy",a:0.48,m:1},{c:"Dropbox",a:0.38,m:1},
+  {c:"Reddit",a:0.22,m:1}
+];
+var photo=document.getElementById('s1Photo'), cvs=document.getElementById('s1Canvas'),
+    cx=cvs.getContext('2d'), tmDiv=document.getElementById('s1Treemap'),
+    tmTT=document.getElementById('tmTT'), rp=document.getElementById('s1Right'),
+    sec=document.getElementById('sec1'), PAD=14;
+var dissolved=false, particles=[], running=false;
+
+function sz(){ cvs.width=rp.clientWidth; cvs.height=rp.clientHeight; }
+sz(); window.addEventListener('resize',sz);
+
+var cScale=d3.scaleLinear().domain([0,5,10,15,20]).range(['#1a0533','#7b2d8e','#e6437d','#f4a32e','#fcf06e']);
+
+function getLeaves(w,h){
+  var r=d3.hierarchy({children:MEMBERS.map(function(d){return{company:d.c,amount:d.a,member:d.m};})})
+    .sum(function(d){return d.amount;}).sort(function(a,b){return b.value-a.value;});
+  d3.treemap().size([w-PAD*2,h-PAD*2]).padding(4).round(true)(r);
+  return r.leaves();
+}
+function leafRGB(lf){var c=d3.color(lf.data.member?cScale(lf.data.amount):'#2a1a3a');return[c.r,c.g,c.b];}
+
+function samplePx(w,h){
+  var t=document.createElement('canvas');t.width=w;t.height=h;
+  var tc=t.getContext('2d');tc.drawImage(photo,0,0,w,h);
+  var d;try{d=tc.getImageData(0,0,w,h).data;}catch(e){return null;}
+  var s=4,o=[];
+  for(var y=0;y<h;y+=s)for(var x=0;x<w;x+=s){var i=(y*w+x)*4;if(d[i+3]>30)o.push({x:x,y:y,r:d[i],g:d[i+1],b:d[i+2]});}
+  return o.length>100?o:null;
+}
+
+function makeParticles(w,h){
+  var px=samplePx(w,h);if(!px)return false;
+  var lv=getLeaves(w,h),totA=0;
+  lv.forEach(function(l){totA+=(l.x1-l.x0)*(l.y1-l.y0);});
+  var tg=[];
+  lv.forEach(function(l){
+    var n=Math.max(1,Math.round((l.x1-l.x0)*(l.y1-l.y0)/totA*px.length));
+    var rgb=leafRGB(l);
+    for(var i=0;i<n;i++)tg.push({x:PAD+l.x0+Math.random()*(l.x1-l.x0),y:PAD+l.y0+Math.random()*(l.y1-l.y0),r:rgb[0],g:rgb[1],b:rgb[2]});
+  });
+  for(var i=tg.length-1;i>0;i--){var j=Math.random()*i|0;var tmp=tg[i];tg[i]=tg[j];tg[j]=tmp;}
+  var len=Math.min(px.length,tg.length);particles=[];
+  for(var i=0;i<len;i++){var p=px[i],t=tg[i];
+    particles.push({x:p.x,y:p.y,sx:p.x,sy:p.y,tx:t.x,ty:t.y,sr:p.r,sg:p.g,sb:p.b,tr:t.r,tg:t.g,tb:t.b,cr:p.r,cg:p.g,cb:p.b,sz:1.5+Math.random()*2,prog:0,spd:.005+Math.random()*.015,del:Math.random()*35,fr:0,dn:false});
+  }
+  return true;
+}
+
+function tick(){
+  if(!running)return;cx.clearRect(0,0,cvs.width,cvs.height);var dn=0;
+  for(var i=0;i<particles.length;i++){var p=particles[i];p.fr++;
+    if(p.fr>p.del){p.prog=Math.min(1,p.prog+p.spd);
+      var e=p.prog<.5?4*p.prog*p.prog*p.prog:1-Math.pow(-2*p.prog+2,3)/2;
+      p.x=p.sx+(p.tx-p.sx)*e;p.y=p.sy+(p.ty-p.sy)*e;
+      p.cr=p.sr+(p.tr-p.sr)*e|0;p.cg=p.sg+(p.tg-p.sg)*e|0;p.cb=p.sb+(p.tb-p.sb)*e|0;
+      if(p.prog>=1)p.dn=true;}
+    cx.globalAlpha=p.fr<=p.del?1-p.fr/p.del*.15:1;
+    cx.fillStyle='rgb('+p.cr+','+p.cg+','+p.cb+')';cx.fillRect(p.x,p.y,p.sz,p.sz);
+    if(p.dn)dn++;}
+  cx.globalAlpha=1;
+  if(dn<particles.length){requestAnimationFrame(tick);return;}
+  running=false; buildTreemap(); tmDiv.classList.add('visible');
+  setTimeout(function(){cvs.style.transition='opacity .6s';cvs.style.opacity='0';
+    setTimeout(function(){cvs.style.display='none';},700);},100);
+}
+
+function dissolve(){
+  if(dissolved)return;dissolved=true;sz();
+  var ok=makeParticles(cvs.width,cvs.height);
+  if(!ok){photo.style.display='none';buildTreemap();tmDiv.classList.add('visible');return;}
+  cx.drawImage(photo,0,0,cvs.width,cvs.height);
+  photo.style.display='none';running=true;tick();
+}
+
+function buildTreemap(){
+  if(tmDiv.querySelector('svg'))return;
+  var w=rp.clientWidth,h=rp.clientHeight,lv=getLeaves(w,h);
+  var svg=d3.select('#s1Treemap').append('svg').attr('width',w).attr('height',h);
+  var sorted=MEMBERS.map(function(x){return{company:x.c,amount:x.a,member:x.m};}).sort(function(a,b){return b.amount-a.amount;});
+  var nodes=svg.selectAll('g').data(lv).enter().append('g')
+    .attr('transform',function(d){return 'translate('+(d.x0+PAD)+','+(d.y0+PAD)+')';});
+  nodes.append('rect')
+    .attr('width',function(d){return Math.max(0,d.x1-d.x0);}).attr('height',function(d){return Math.max(0,d.y1-d.y0);})
+    .attr('rx',6).attr('fill',function(d){return d.data.member?cScale(d.data.amount):'#2a1a3a';})
+    .attr('stroke','rgba(255,255,255,.15)').attr('stroke-width',1).style('cursor','pointer');
+  nodes.append('text').attr('x',8).attr('y',20).attr('fill','#fff')
+    .attr('font-family','Inter,sans-serif').attr('font-weight',700)
+    .attr('font-size',function(d){return(d.x1-d.x0)>140?'18px':(d.x1-d.x0)>80?'15px':'13px';})
+    .attr('paint-order','stroke').attr('stroke','rgba(0,0,0,.6)').attr('stroke-width',3)
+    .text(function(d){return(d.x1-d.x0)<40?'':d.data.company;});
+  nodes.append('text').attr('x',8).attr('y',36).attr('fill','rgba(255,255,255,.85)')
+    .attr('paint-order','stroke').attr('stroke','rgba(0,0,0,.5)').attr('stroke-width',2)
+    .attr('font-family','Share Tech Mono,monospace')
+    .attr('font-size',function(d){return(d.x1-d.x0)>100?'16px':'14px';})
+    .text(function(d){return(d.x1-d.x0)<50?'':'$'+d.data.amount+'M';});
+  // hover
+  nodes.on('mouseover',function(ev,d){
+    d3.select(this).select('rect').attr('stroke','#fff').attr('stroke-width',2);
+    tmTT.style.display='block';
+    tmTT.innerHTML='<strong style="color:#f1f1f1">'+d.data.company+'</strong><br>$'+d.data.amount+'M<br><span style="color:#7a7a90;font-size:1.4rem">Click to inspect</span>';
+  }).on('mousemove',function(ev){
+    tmTT.style.left=(ev.clientX+16)+'px';tmTT.style.top=(ev.clientY-10)+'px';
+  }).on('mouseout',function(ev,d){
+    d3.select(this).select('rect').attr('stroke','rgba(255,255,255,.15)').attr('stroke-width',1);tmTT.style.display='none';
+  });
+}
+
+var ready=photo.complete&&photo.naturalWidth>0;
+if(!ready)photo.addEventListener('load',function(){ready=true;});
+function check(){if(dissolved||!ready)return;var r=sec.getBoundingClientRect();if(-r.top/r.height>.12)dissolve();}
+window.addEventListener('scroll',check,{passive:true});
+new IntersectionObserver(function(e){if(e[0].isIntersecting)check();},{threshold:[.1,.2,.3]}).observe(sec);
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════════
+// LOBBYIST SCENE - canvas drawing + reveal
+// ══════════════════════════════════════════
+(function(){
+  var wrap=document.getElementById('revealWrap');
+  var c1=document.getElementById('cvsNormal');
+  var c2=document.getElementById('cvsDevil');
+  var ring=document.getElementById('cursorRing');
+  var hint=document.getElementById('revealHint');
+  if(!wrap||!c1||!c2)return;
+
+  function sz(){
+    var w=wrap.clientWidth,h=wrap.clientHeight;
+    c1.width=w;c1.height=h;c2.width=w;c2.height=h;
+    drawScene(c1.getContext('2d'),w,h,false);
+    drawScene(c2.getContext('2d'),w,h,true);
+  }
+
+  function drawPerson(ctx,cx,cy,facing,speaker,devil){
+    var dir=facing?1:-1;
+    var bodyC=devil?'#8b1a1a':'#3a3a50';
+    var skinC=devil?'#c85040':'#dcc0a0';
+    var hairC=devil?'#6b1a1a':'#3d2d20';
+    // torso
+    ctx.fillStyle=bodyC;
+    ctx.beginPath();ctx.roundRect(cx-16,cy+8,32,42,5);ctx.fill();
+    // collar
+    ctx.fillStyle=devil?'#5a1515':'#c8c8d0';
+    ctx.beginPath();ctx.moveTo(cx-7,cy+8);ctx.lineTo(cx,cy+16);ctx.lineTo(cx+7,cy+8);ctx.fill();
+    // head
+    ctx.fillStyle=skinC;
+    ctx.beginPath();ctx.ellipse(cx,cy-4,13,15,0,0,Math.PI*2);ctx.fill();
+    // hair
+    ctx.fillStyle=hairC;
+    ctx.beginPath();ctx.ellipse(cx,cy-12,14,10,0,Math.PI,Math.PI*2);ctx.fill();
+    // eye
+    var ex=cx+dir*5;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(ex,cy-5,3,2.5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=devil?'#e63946':'#1a1a2a';ctx.beginPath();ctx.arc(ex+dir,cy-5,1.2,0,Math.PI*2);ctx.fill();
+    // horns
+    if(devil){
+      ctx.fillStyle='#e63946';
+      ctx.beginPath();ctx.moveTo(cx-10,cy-17);ctx.lineTo(cx-6,cy-35);ctx.lineTo(cx-2,cy-15);ctx.fill();
+      ctx.beginPath();ctx.moveTo(cx+2,cy-15);ctx.lineTo(cx+6,cy-35);ctx.lineTo(cx+10,cy-17);ctx.fill();
+      // glow
+      var g=ctx.createRadialGradient(cx,cy,5,cx,cy,60);
+      g.addColorStop(0,'rgba(230,57,70,.15)');g.addColorStop(1,'rgba(230,57,70,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,60,0,Math.PI*2);ctx.fill();
+    }
+    // arms
+    ctx.strokeStyle=bodyC;ctx.lineWidth=5;ctx.lineCap='round';
+    if(speaker){
+      ctx.beginPath();ctx.moveTo(cx+16,cy+18);ctx.lineTo(cx+38,cy-2);ctx.stroke();
+      ctx.fillStyle=skinC;ctx.beginPath();ctx.arc(cx+40,cy-4,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.moveTo(cx-16,cy+18);ctx.lineTo(cx-32,cy+6);ctx.stroke();
+      ctx.fillStyle=skinC;ctx.beginPath();ctx.arc(cx-34,cy+5,4,0,Math.PI*2);ctx.fill();
+    }else{
+      ctx.beginPath();ctx.moveTo(cx+dir*16,cy+22);ctx.lineTo(cx+dir*28,cy+38);ctx.stroke();
+    }
+  }
+
+  function drawScene(ctx,w,h,devil){
+    // bg
+    ctx.fillStyle=devil?'#0a0008':'#0e0e18';
+    ctx.fillRect(0,0,w,h);
+    // table
+    var tw=w*0.55,th=h*0.22,tx=(w-tw)/2,ty=h*0.48;
+    ctx.fillStyle='#2a2838';
+    ctx.beginPath();ctx.ellipse(w/2,ty+th/2,tw/2,th/2,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#322f45';
+    ctx.beginPath();ctx.ellipse(w/2,ty+th/2,tw/2-20,th/2-10,0,0,Math.PI*2);ctx.fill();
+    // table items - normal: docs & laptop. devil: skull, bloody contract, knife, voodoo doll
+    if(!devil){
+      ctx.fillStyle='#b0b0b8';
+      [[-.08,-.02],[.02,.02],[.1,-.03],[-.04,.04]].forEach(function(d){
+        ctx.fillRect(w/2+d[0]*w,ty+th/2+d[1]*h,24,16);
+        // lines on paper
+        ctx.fillStyle='#8a8a90';
+        for(var li=3;li<14;li+=4) ctx.fillRect(w/2+d[0]*w+3,ty+th/2+d[1]*h+li,18,1);
+        ctx.fillStyle='#b0b0b8';
+      });
+      // laptop
+      ctx.fillStyle='#3a3a50';ctx.fillRect(w/2-14,ty+th/2-12,28,18);
+      ctx.fillStyle='#6a8aaa';ctx.fillRect(w/2-12,ty+th/2-10,24,14);
+      // coffee cup
+      ctx.fillStyle='#e8e0d0';ctx.beginPath();ctx.ellipse(w*0.58,ty+th/2+h*0.01,7,5,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#8b6040';ctx.beginPath();ctx.ellipse(w*0.58,ty+th/2+h*0.01,5,3,0,0,Math.PI*2);ctx.fill();
+    } else {
+      // SKULL
+      var sx=w*0.46,sy=ty+th/2-5;
+      ctx.fillStyle='#e8ddd0';ctx.beginPath();ctx.ellipse(sx,sy,12,14,0,0,Math.PI*2);ctx.fill();
+      // jaw
+      ctx.beginPath();ctx.ellipse(sx,sy+10,8,6,0,0,Math.PI);ctx.fill();
+      // eye sockets
+      ctx.fillStyle='#1a0008';
+      ctx.beginPath();ctx.ellipse(sx-5,sy-2,4,5,-.2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(sx+5,sy-2,4,5,.2,0,Math.PI*2);ctx.fill();
+      // nose
+      ctx.beginPath();ctx.moveTo(sx-2,sy+5);ctx.lineTo(sx,sy+2);ctx.lineTo(sx+2,sy+5);ctx.fill();
+      // teeth
+      ctx.fillStyle='#e8ddd0';
+      for(var ti=-6;ti<=6;ti+=3){ctx.fillRect(sx+ti-1,sy+9,2,4);}
+      // red glow under skull
+      var sg=ctx.createRadialGradient(sx,sy,2,sx,sy,25);
+      sg.addColorStop(0,'rgba(230,57,70,.2)');sg.addColorStop(1,'rgba(230,57,70,0)');
+      ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,25,0,Math.PI*2);ctx.fill();
+
+      // BLOODY CONTRACT
+      var cx2=w*0.54,cy2=ty+th/2+h*0.02;
+      ctx.fillStyle='#c8b8a0';ctx.fillRect(cx2-12,cy2-8,24,18);
+      // blood splatter
+      ctx.fillStyle='#8b0000';
+      ctx.beginPath();ctx.arc(cx2+4,cy2,5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(cx2-3,cy2+4,3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(cx2+7,cy2+5,2,0,Math.PI*2);ctx.fill();
+      // drips
+      ctx.fillRect(cx2+3,cy2,2,8);ctx.fillRect(cx2-4,cy2+3,1,6);
+      // text on contract
+      ctx.fillStyle='#4a3020';ctx.font='6px monospace';
+      ctx.fillText('OPPOSE',cx2-10,cy2-3);
+
+      // KNIFE
+      var kx=w*0.4,ky=ty+th/2+h*0.03;
+      // blade
+      ctx.fillStyle='#c0c0cc';
+      ctx.beginPath();ctx.moveTo(kx-18,ky);ctx.lineTo(kx+8,ky-2);ctx.lineTo(kx+8,ky+2);ctx.lineTo(kx-18,ky+1);ctx.fill();
+      // handle
+      ctx.fillStyle='#4a2a1a';ctx.fillRect(kx+8,ky-3,12,6);
+      // blood on blade
+      ctx.fillStyle='#8b0000';
+      ctx.beginPath();ctx.arc(kx-8,ky,2,0,Math.PI*2);ctx.fill();
+      ctx.fillRect(kx-12,ky,1,4);
+
+      // VOODOO DOLL
+      var vx=w*0.62,vy=ty+th/2-2;
+      ctx.fillStyle='#a08060';
+      // body
+      ctx.beginPath();ctx.ellipse(vx,vy+4,6,10,0,0,Math.PI*2);ctx.fill();
+      // head
+      ctx.beginPath();ctx.arc(vx,vy-8,6,0,Math.PI*2);ctx.fill();
+      // X eyes
+      ctx.strokeStyle='#1a0008';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(vx-4,vy-10);ctx.lineTo(vx-1,vy-7);ctx.moveTo(vx-1,vy-10);ctx.lineTo(vx-4,vy-7);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(vx+1,vy-10);ctx.lineTo(vx+4,vy-7);ctx.moveTo(vx+4,vy-10);ctx.lineTo(vx+1,vy-7);ctx.stroke();
+      // pins sticking out
+      ctx.strokeStyle='#cc0000';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(vx-6,vy);ctx.lineTo(vx-14,vy-3);ctx.stroke();
+      ctx.fillStyle='#e63946';ctx.beginPath();ctx.arc(vx-14,vy-3,2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.moveTo(vx+6,vy+2);ctx.lineTo(vx+13,vy-1);ctx.stroke();
+      ctx.fillStyle='#e63946';ctx.beginPath();ctx.arc(vx+13,vy-1,2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.moveTo(vx,vy-14);ctx.lineTo(vx+2,vy-22);ctx.stroke();
+      ctx.fillStyle='#e63946';ctx.beginPath();ctx.arc(vx+2,vy-22,2,0,Math.PI*2);ctx.fill();
+
+      // PENTAGRAM (faint, on table surface)
+      ctx.strokeStyle='rgba(230,57,70,.15)';ctx.lineWidth=1;
+      var px2=w/2,py2=ty+th/2;var pr=tw*0.18;
+      ctx.beginPath();
+      for(var pi=0;pi<5;pi++){
+        var a1=(pi*4*Math.PI/5)-Math.PI/2;
+        var a2=((pi*4+4)*Math.PI/5*4/4)-Math.PI/2;
+        ctx.moveTo(px2+Math.cos(a1)*pr,py2+Math.sin(a1)*pr*0.5);
+        var ni=(pi*2)%5;
+        var a3=(ni*4*Math.PI/5)-Math.PI/2;
+        ctx.lineTo(px2+Math.cos(a3)*pr,py2+Math.sin(a3)*pr*0.5);
+      }
+      ctx.stroke();
+    }
+    // whiteboard
+    var bx=w*0.38,by=h*0.06,bw=w*0.24,bh=h*0.14;
+    ctx.fillStyle='#e8e8ec';ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='#c0c0c8';ctx.lineWidth=2;ctx.strokeRect(bx,by,bw,bh);
+    // chart on board
+    ctx.strokeStyle=devil?'#e63946':'#6a6aaa';ctx.lineWidth=2;ctx.beginPath();
+    var pts=[[0,.7],[.15,.5],[.3,.6],[.5,.2],[.7,.35],[.85,.15],[1,.2]];
+    pts.forEach(function(p,i){var px=bx+8+p[0]*(bw-16),py=by+bh*0.3+p[1]*(bh*0.6);
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();
+    // board text
+    ctx.fillStyle=devil?'#e63946':'#6a6a80';ctx.font='bold 11px Share Tech Mono,monospace';
+    ctx.fillText(devil?'KILL':'PRIVACY',bx+6,by+14);
+    ctx.fillText(devil?'LIST':'BILLS',bx+6,by+26);
+    // audience
+    var seats=[
+      [w*0.26,h*0.34,true],[w*0.38,h*0.28,true],
+      [w*0.62,h*0.28,false],[w*0.74,h*0.34,false],
+      [w*0.32,h*0.7,true],[w*0.68,h*0.7,false]
+    ];
+    seats.forEach(function(s){drawPerson(ctx,s[0],s[1],s[2],false,false);});
+    // speaker
+    drawPerson(ctx,w*0.5,h*0.18,true,true,devil);
+    // flames if devil
+    if(devil){
+      for(var fx=0;fx<w;fx+=25){
+        var fh=15+(fx*7%25);
+        ctx.fillStyle='rgba(120,20,10,.7)';
+        ctx.beginPath();ctx.moveTo(fx,h);ctx.lineTo(fx+12,h-fh);ctx.lineTo(fx+25,h);ctx.fill();
+        ctx.fillStyle='rgba(200,40,15,.4)';
+        ctx.beginPath();ctx.moveTo(fx+5,h);ctx.lineTo(fx+12,h-fh+8);ctx.lineTo(fx+20,h);ctx.fill();
+      }
+    }
+  }
+
+  sz();
+  window.addEventListener('resize',sz);
+
+  // Reveal interaction
+  var radius=80;
+  wrap.addEventListener('mouseenter',function(){ring.style.display='block';hint.style.opacity='0';});
+  wrap.addEventListener('mouseleave',function(){ring.style.display='none';c2.style.clipPath='circle(0px at 50% 50%)';hint.style.opacity='.6';});
+  wrap.addEventListener('mousemove',function(e){
+    var r=wrap.getBoundingClientRect();
+    var x=e.clientX-r.left,y=e.clientY-r.top;
+    c2.style.clipPath='circle('+radius+'px at '+x+'px '+y+'px)';
+    ring.style.left=x+'px';ring.style.top=y+'px';
+  });
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════════
+// SANDDANCE UNIT VIZ
+// ══════════════════════════════════════════
+var bills = [
+  {bill:"SB1041",session:"2015-2016",title:"REVENUE-TECH",status:"failed",pos:"OPP",topic:"Tax & Commerce"},
+  {bill:"HB2411",session:"2017-2018",title:"BIOMETRIC DATA",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB1502",session:"2017-2018",title:"RIGHT TO KNOW ACT",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"HB2774",session:"2017-2018",title:"RIGHT TO KNOW ACT",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB1735",session:"2017-2018",title:"SHORT-TERM RENTAL",status:"failed",pos:"PROP",topic:"Sharing Economy"},
+  {bill:"HB3449",session:"2017-2018",title:"GEOLOCATION PRIVACY",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB2577",session:"2017-2018",title:"USE/OCC TAX",status:"failed",pos:"OPP",topic:"Tax & Commerce"},
+  {bill:"SB2641",session:"2017-2018",title:"RENTAL CAR WAIVER",status:"failed",pos:"OPP",topic:"Sharing Economy"},
+  {bill:"SB0119",session:"2019-2020",title:"FY2020 BUDGET",status:"enacted",pos:"OPP",topic:"Tax & Commerce"},
+  {bill:"SB1719",session:"2019-2020",title:"KEEP DEVICES SAFE",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"HB2785",session:"2019-2020",title:"GEOLOCATION PRIVACY",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"HB3358",session:"2019-2020",title:"DATA TRANSPARENCY",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB2089",session:"2019-2020",title:"STUDENT PROTECTION",status:"failed",pos:"OPP",topic:"Education Data"},
+  {bill:"HB3606",session:"2019-2020",title:"STUDENT PROTECTION",status:"enacted",pos:"OPP",topic:"Education Data"},
+  {bill:"HB3357",session:"2019-2020",title:"DATA PRIVACY ACT",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"HB3222",session:"2019-2020",title:"DHS LAND TRANSFER",status:"enacted",pos:"OPP",topic:"Other"},
+  {bill:"HB5204",session:"2019-2020",title:"CYBERSECURITY DEFENSE",status:"failed",pos:"PROP",topic:"Cybersecurity"},
+  {bill:"HB2404",session:"2021-2022",title:"RIGHT TO KNOW ACT",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB1578",session:"2021-2022",title:"STUDENT PROTECTION",status:"enacted",pos:"OPP",topic:"Education Data"},
+  {bill:"SB2066",session:"2021-2022",title:"MARKETPLACE TAX",status:"enacted",pos:"PROP",topic:"Tax & Commerce"},
+  {bill:"SB2081",session:"2021-2022",title:"KEEP DEVICES SAFE",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"SB2183",session:"2021-2022",title:"TRANSPORT NETWORK",status:"enacted",pos:"PROP",topic:"Sharing Economy"},
+  {bill:"SB2403",session:"2021-2022",title:"CAR-SHARING ACT",status:"enacted",pos:"PROP",topic:"Sharing Economy"},
+  {bill:"HB3712",session:"2021-2022",title:"CAR-SHARING ACT",status:"failed",pos:"PROP",topic:"Sharing Economy"},
+  {bill:"HB2880",session:"2021-2022",title:"DIGITAL IDENTITY",status:"failed",pos:"OPP",topic:"Privacy & Data"},
+  {bill:"HB2553",session:"2021-2022",title:"HOUSEHOLD PRIVACY",status:"failed",pos:"OPP",topic:"Privacy & Data"}
+];
+bills.forEach(function(b,i){b.idx=i;b.aligned=(b.pos==='OPP'&&b.status==='failed')||(b.pos==='PROP'&&b.status==='enacted');});
+
+var ctr=document.getElementById('sanddance-container'),svgEl=d3.select('#sanddance-svg'),
+    ttip=document.getElementById('sdTooltip'),vLabel=document.getElementById('viewLabel'),
+    leg=document.getElementById('sdLegend');
+var C={OPP:'#e63946',PROP:'#2a9d8f',failed:'#e63946',enacted:'#f4a261',
+  'Privacy & Data':'#e63946','Education Data':'#e76f51','Tax & Commerce':'#8a8a9a',
+  'Sharing Economy':'#2a9d8f','Cybersecurity':'#6688cc','Other':'#5a5a6a'};
+var W,H,U;
+function rsz(){W=ctr.clientWidth;H=ctr.clientHeight;if(!W)W=window.innerWidth/2;if(!H)H=window.innerHeight;U=Math.min(Math.floor(W/12),Math.floor(H/14),40);svgEl.attr('width',W).attr('height',H);}
+rsz();window.addEventListener('resize',function(){rsz();applyView(curView,false);});
+// Re-measure after layout settles
+setTimeout(function(){rsz();applyView(curView,false);},100);
+
+var marks=svgEl.selectAll('.unit').data(bills).enter().append('rect').attr('class','unit')
+  .attr('width',U-4).attr('height',U-4).attr('rx',5).attr('fill','#e63946').attr('opacity',.9)
+  .attr('stroke','#0c0c10').attr('stroke-width',1).style('cursor','pointer')
+  .on('mouseover',function(ev,d){d3.select(this).attr('opacity',1).attr('stroke','#fff').attr('stroke-width',2);
+    ttip.style.display='block';ttip.innerHTML='<div class="tt-title">'+d.bill+' - '+d.title+'</div>Session: '+d.session+'<br>Position: '+(d.pos==='OPP'?'Opposed':'Supported')+'<br>Outcome: '+d.status+'<br>Topic: '+d.topic+'<br><span style="color:#7a7a90">Click for details</span>';})
+  .on('mousemove',function(ev){ttip.style.left=(ev.clientX+16)+'px';ttip.style.top=(ev.clientY-10)+'px';})
+  .on('mouseout',function(){d3.select(this).attr('opacity',.9).attr('stroke','#0c0c10').attr('stroke-width',1);ttip.style.display='none';})
+  .on('click',function(ev,d){ttip.style.display='none';openCard(d);});
+
+function layGrid(){var cols=6,g=U+6,tw=cols*g,th=Math.ceil(bills.length/cols)*g,ox=(W-tw)/2,oy=(H-th)/2;
+  return bills.map(function(b,i){return{x:ox+(i%cols)*g,y:oy+Math.floor(i/cols)*g,color:C[b.topic]};});}
+
+function layPos(){var gr={OPP:[],PROP:[]};bills.forEach(function(b){gr[b.pos].push(b);});var r=new Array(bills.length);
+  var cols=4,g=U+6,gap=60;
+  var oppRows=Math.ceil(gr.OPP.length/cols),propRows=Math.ceil(gr.PROP.length/cols);
+  var maxRows=Math.max(oppRows,propRows);
+  var ow=cols*g,pc=Math.min(cols,gr.PROP.length),pw=pc*g,tw=ow+gap+pw,ox=(W-tw)/2,oy=(H-maxRows*g-40)/2+30;
+  gr.OPP.forEach(function(b,i){r[b.idx]={x:ox+(i%cols)*g,y:oy+Math.floor(i/cols)*g,color:C.OPP};});
+  gr.PROP.forEach(function(b,i){r[b.idx]={x:ox+ow+gap+(i%pc)*g,y:oy+Math.floor(i/pc)*g,color:C.PROP};});return r;}
+
+function layOut(){var gr={'OPP-failed':[],'OPP-enacted':[],'PROP-failed':[],'PROP-enacted':[]};
+  bills.forEach(function(b){gr[b.pos+'-'+b.status].push(b);});var r=new Array(bills.length),cols=4,g=U+4;
+  var qs=[{k:'OPP-failed',ox:0,oy:0},{k:'OPP-enacted',ox:1,oy:0},{k:'PROP-enacted',ox:0,oy:1},{k:'PROP-failed',ox:1,oy:1}];
+  var qw=cols*g+30,qh=4*g+40,tw=qw*2+20,th=qh*2+20,bx=(W-tw)/2,by=(H-th)/2;
+  qs.forEach(function(q){gr[q.k].forEach(function(b,i){r[b.idx]={x:bx+q.ox*(qw+20)+(i%cols)*g+8,y:by+q.oy*(qh+20)+Math.floor(i/cols)*g+24,color:b.status==='failed'?C.failed:C.enacted};});});return r;}
+
+function layTopic(){var ts=['Privacy & Data','Education Data','Tax & Commerce','Sharing Economy','Cybersecurity','Other'],gr={};
+  ts.forEach(function(t){gr[t]=[];});bills.forEach(function(b){gr[b.topic].push(b);});var r=new Array(bills.length);
+  var cols=5,g=U+4;
+  var active=ts.filter(function(t){return gr[t].length>0;});
+  var rowH=Math.floor((H-40)/active.length);
+  var ri=0;
+  active.forEach(function(t){
+    var ox=(W-cols*g)/2;
+    var oy=20+ri*rowH+10;
+    gr[t].forEach(function(b,i){r[b.idx]={x:ox+(i%cols)*g,y:oy+Math.floor(i/cols)*g,color:C[t]};});
+    ri++;
+  });return r;}
+
+function laySess(){var ss=['2015-2016','2017-2018','2019-2020','2021-2022'],gr={};ss.forEach(function(s){gr[s]=[];});
+  bills.forEach(function(b){gr[b.session].push(b);});var r=new Array(bills.length),g=U+4,cols=3;
+  var cw=cols*g+30,tw=ss.length*cw,bx=(W-tw)/2;
+  var maxR=0;ss.forEach(function(s){maxR=Math.max(maxR,Math.ceil(gr[s].length/cols));});
+  var oy=(H-maxR*g-40)/2+30;
+  ss.forEach(function(s,si){gr[s].forEach(function(b,i){r[b.idx]={x:bx+si*cw+(i%cols)*g+8,y:oy+Math.floor(i/cols)*g,color:b.pos==='OPP'?C.OPP:C.PROP};});});return r;}
+
+function layAlign(){var r=new Array(bills.length),g=U+6,al=bills.filter(function(b){return b.aligned;}),na=bills.filter(function(b){return!b.aligned;});
+  var cols=4,gap=60,lw=cols*g,rc=Math.min(cols,na.length),rw=rc*g,tw=lw+gap+rw,ox=(W-tw)/2;
+  var maxR=Math.max(Math.ceil(al.length/cols),Math.ceil(na.length/rc));
+  var oy=(H-maxR*g-40)/2+30;
+  al.forEach(function(b,i){r[b.idx]={x:ox+(i%cols)*g,y:oy+Math.floor(i/cols)*g,color:'#e63946'};});
+  na.forEach(function(b,i){r[b.idx]={x:ox+lw+gap+(i%rc)*g,y:oy+Math.floor(i/rc)*g,color:'#f4a261'};});return r;}
+
+var VIEWS={'grid-all':{fn:layGrid,label:'ALL 26 BILLS',lt:'topic'},'group-position':{fn:layPos,label:'BY POSITION',lt:'position'},
+  'group-outcome':{fn:layOut,label:'POSITION x OUTCOME',lt:'outcome'},'group-topic':{fn:layTopic,label:'BY TOPIC',lt:'topic'},
+  'group-session':{fn:laySess,label:'BY SESSION',lt:'position'},'scatter-aligned':{fn:layAlign,label:'IA ALIGNMENT',lt:'aligned'}};
+var LEGS={topic:[{l:'Privacy & Data',c:C['Privacy & Data']},{l:'Education',c:C['Education Data']},{l:'Tax',c:C['Tax & Commerce']},{l:'Sharing',c:C['Sharing Economy']},{l:'Cyber',c:C.Cybersecurity}],
+  position:[{l:'Opposed',c:C.OPP},{l:'Supported',c:C.PROP}],outcome:[{l:'Failed',c:C.failed},{l:'Enacted',c:C.enacted}],
+  aligned:[{l:'IA Got Its Way',c:'#e63946'},{l:'IA Overruled',c:'#f4a261'}]};
+var curView='grid-all';
+
+function applyView(k,anim){
+  curView=k;var v=VIEWS[k],pos=v.fn();vLabel.textContent=v.label;
+  leg.innerHTML=LEGS[v.lt].map(function(it){return'<div class="sd-legend-item"><div class="sd-legend-swatch" style="background:'+it.c+'"></div>'+it.l+'</div>';}).join('');
+  var t=anim?d3.transition().duration(900).ease(d3.easeCubicInOut):d3.transition().duration(0);
+  marks.transition(t).attr('x',function(d,i){return pos[i].x;}).attr('y',function(d,i){return pos[i].y;})
+    .attr('fill',function(d,i){return pos[i].color;}).attr('width',U-4).attr('height',U-4);
+  svgEl.selectAll('.gl').remove();
+  // group labels
+  if(k==='group-position'){var p2=v.fn(),ob=bills.filter(function(b){return b.pos==='OPP';}),pb=bills.filter(function(b){return b.pos==='PROP';});
+    if(ob.length)svgEl.append('text').attr('class','gl').attr('x',p2[ob[0].idx].x).attr('y',p2[ob[0].idx].y-14).attr('fill','#e63946').attr('font-family','Share Tech Mono,monospace').attr('font-size','18px').text('OPPOSED ('+ob.length+')');
+    if(pb.length)svgEl.append('text').attr('class','gl').attr('x',p2[pb[0].idx].x).attr('y',p2[pb[0].idx].y-14).attr('fill','#2a9d8f').attr('font-family','Share Tech Mono,monospace').attr('font-size','18px').text('SUPPORTED ('+pb.length+')');}
+  if(k==='group-outcome'){var p=v.fn();
+    [{k:'OPP-failed',t:'Opposed \u2192 Failed',c:'#e63946'},{k:'OPP-enacted',t:'Opposed \u2192 Enacted',c:'#f4a261'},{k:'PROP-enacted',t:'Supported \u2192 Enacted',c:'#2a9d8f'},{k:'PROP-failed',t:'Supported \u2192 Failed',c:'#8a8a9a'}]
+    .forEach(function(l){var g=bills.filter(function(b){return b.pos+'-'+b.status===l.k;});if(g.length)svgEl.append('text').attr('class','gl').attr('x',p[g[0].idx].x).attr('y',p[g[0].idx].y-10).attr('fill',l.c).attr('font-family','Share Tech Mono,monospace').attr('font-size','15px').text(l.t+' ('+g.length+')');});}
+  if(k==='group-topic'){var p=v.fn();['Privacy & Data','Education Data','Tax & Commerce','Sharing Economy','Cybersecurity','Other'].forEach(function(t){
+    var g=bills.filter(function(b){return b.topic===t;});if(g.length)svgEl.append('text').attr('class','gl').attr('x',p[g[0].idx].x).attr('y',p[g[0].idx].y-8).attr('fill',C[t]).attr('font-family','Share Tech Mono,monospace').attr('font-size','15px').text(t+' ('+g.length+')');});}
+  if(k==='group-session'){var p=v.fn();['2015-2016','2017-2018','2019-2020','2021-2022'].forEach(function(s){
+    var g=bills.filter(function(b){return b.session===s;});if(g.length)svgEl.append('text').attr('class','gl').attr('x',p[g[0].idx].x).attr('y',p[g[0].idx].y-14).attr('fill','#8a8a9a').attr('font-family','Share Tech Mono,monospace').attr('font-size','16px').text(s);});}
+  if(k==='scatter-aligned'){var p=v.fn(),al=bills.filter(function(b){return b.aligned;}),na=bills.filter(function(b){return!b.aligned;});
+    if(al.length)svgEl.append('text').attr('class','gl').attr('x',p[al[0].idx].x).attr('y',p[al[0].idx].y-14).attr('fill','#e63946').attr('font-family','Share Tech Mono,monospace').attr('font-size','12px').text('IA GOT ITS WAY ('+al.length+')');
+    if(na.length)svgEl.append('text').attr('class','gl').attr('x',p[na[0].idx].x).attr('y',p[na[0].idx].y-14).attr('fill','#f4a261').attr('font-family','Share Tech Mono,monospace').attr('font-size','12px').text('IA OVERRULED ('+na.length+')');}
+}
+applyView('grid-all',false);
+
+var stepEls=document.querySelectorAll('.step-panel[data-view]');
+new IntersectionObserver(function(entries){entries.forEach(function(e){
+  if(e.isIntersecting){var v=e.target.dataset.view;if(v&&v!==curView)applyView(v,true);}
+});},{threshold:0.45}).observe(stepEls[0]);
+for(var i=0;i<stepEls.length;i++)(function(el){
+  new IntersectionObserver(function(entries){entries.forEach(function(e){
+    if(e.isIntersecting){var v=e.target.dataset.view;if(v&&v!==curView)applyView(v,true);}
+  });},{threshold:0.45}).observe(el);
+})(stepEls[i]);
+
+// ══════════════════════════════════════════
+// US MAP (Section 1C)
+// ══════════════════════════════════════════
+(function(){
+  var billCounts={CA:25,IL:18,NY:22,WA:15,MA:12,TX:8,FL:7,VA:6,CT:5,NJ:9,MD:7,PA:4,OH:3,MN:5,CO:4,OR:6,HI:3,ME:3,NV:4,RI:2,VT:3};
+  // FIPS to state abbrev
+  var fipsToAbbr={1:'AL',2:'AK',4:'AZ',5:'AR',6:'CA',8:'CO',9:'CT',10:'DE',11:'DC',12:'FL',13:'GA',15:'HI',16:'ID',17:'IL',18:'IN',19:'IA',20:'KS',21:'KY',22:'LA',23:'ME',24:'MD',25:'MA',26:'MI',27:'MN',28:'MS',29:'MO',30:'MT',31:'NE',32:'NV',33:'NH',34:'NJ',35:'NM',36:'NY',37:'NC',38:'ND',39:'OH',40:'OK',41:'OR',42:'PA',44:'RI',45:'SC',46:'SD',47:'TN',48:'TX',49:'UT',50:'VT',51:'VA',53:'WA',54:'WV',55:'WI',56:'WY'};
+  var iaOffices={DC:{city:'Washington',type:'HQ'},CA:{city:'Sacramento',type:'State'},NY:{city:'Albany',type:'State'},IL:{city:'Chicago',type:'State'},WA:{city:'Seattle',type:'State'}};
+  // We'll compute pin positions from state centroids
+  var iaFips={DC:11,CA:6,NY:36,IL:17,WA:53};
+
+  var container=document.getElementById('usMapContainer');
+  var w=container.clientWidth-40;
+  var h=Math.min(w*0.62,550);
+  var svg=d3.select('#usMap').attr('width',w).attr('height',h).attr('viewBox','0 0 975 610');
+  var tt=document.getElementById('mapTooltip');
+
+  // Color scale: thermal gradient - yellow → orange → red → dark red
+  var colorScale=d3.scaleLinear().domain([0,8,16,25]).range(['#ffffb2','#fecc5c','#fd8d3c','#e31a1c']);
+
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-albers-10m.json').then(function(us){
+    var states=topojson.feature(us,us.objects.states).features;
+    var path=d3.geoPath();
+
+    // Draw states - base color is visible dark slate, not black
+    svg.selectAll('path.state').data(states).enter().append('path').attr('class','state')
+      .attr('d',path)
+      .attr('fill',function(d){
+        var abbr=fipsToAbbr[+d.id];
+        var count=billCounts[abbr]||0;
+        return count>0?colorScale(count):'#e8e8e8';
+      })
+      .attr('stroke','#888').attr('stroke-width',.5)
+      .style('cursor','pointer')
+      .on('mouseover',function(ev,d){
+        var abbr=fipsToAbbr[+d.id]||'??';
+        var count=billCounts[abbr]||0;
+        var hasIA=iaOffices[abbr];
+        d3.select(this).attr('stroke','#fff').attr('stroke-width',2);
+        var html='<strong style="color:#f1f1f1;font-size:1rem">'+abbr+'</strong><br>';
+        html+='<span style="color:#f4a261">'+count+' privacy bills</span> (2019)<br>';
+        if(hasIA)html+='<span style="color:#e63946;font-weight:700">\u2691 IA Office: '+hasIA.city+(hasIA.type==='HQ'?' (HQ)':'')+'</span>';
+        else html+='<span style="color:#6a6a7a">No IA office</span>';
+        tt.innerHTML=html;tt.style.display='block';
+      })
+      .on('mousemove',function(ev){
+        var rect=container.getBoundingClientRect();
+        tt.style.left=(ev.clientX-rect.left+16)+'px';
+        tt.style.top=(ev.clientY-rect.top-10)+'px';
+      })
+      .on('mouseout',function(){
+        d3.select(this).attr('stroke','#888').attr('stroke-width',.5);
+        tt.style.display='none';
+      });
+
+    // State borders
+    svg.append('path')
+      .datum(topojson.mesh(us,us.objects.states,function(a,b){return a!==b;}))
+      .attr('fill','none').attr('stroke','#888').attr('stroke-width',.5).attr('d',path);
+
+    // Compute centroids from actual geometry for IA office pins
+    var centroidMap={};
+    states.forEach(function(s){centroidMap[+s.id]=path.centroid(s);});
+
+    var pinData=Object.keys(iaFips).map(function(abbr){
+      var fid=iaFips[abbr];
+      var c=centroidMap[fid]||[0,0];
+      return{abbr:abbr,x:c[0],y:c[1],info:iaOffices[abbr]};
+    });
+
+    // Pulse rings (SVG animate)
+    pinData.forEach(function(d){
+      svg.append('circle').attr('cx',d.x).attr('cy',d.y).attr('r',6)
+        .attr('fill','none').attr('stroke','#e63946').attr('stroke-width',2).attr('opacity',0)
+        .append('animate').attr('attributeName','r').attr('values','6;22').attr('dur','2s').attr('repeatCount','indefinite');
+      svg.select('circle:last-child').append('animate')
+        .attr('attributeName','opacity').attr('values','0.7;0').attr('dur','2s').attr('repeatCount','indefinite');
+      svg.append('circle').attr('cx',d.x).attr('cy',d.y).attr('r',6)
+        .attr('fill','none').attr('stroke','#e63946').attr('stroke-width',1.5).attr('opacity',0)
+        .append('animate').attr('attributeName','r').attr('values','6;30').attr('dur','2s').attr('begin','0.6s').attr('repeatCount','indefinite');
+      svg.select('circle:last-child').append('animate')
+        .attr('attributeName','opacity').attr('values','0.4;0').attr('dur','2s').attr('begin','0.6s').attr('repeatCount','indefinite');
+    });
+
+    // Pin dots
+    svg.selectAll('circle.pin').data(pinData).enter().append('circle').attr('class','pin')
+      .attr('cx',function(d){return d.x;}).attr('cy',function(d){return d.y;})
+      .attr('r',6).attr('fill','#e63946').attr('stroke','#fff').attr('stroke-width',2)
+      .style('filter','drop-shadow(0 0 8px rgba(230,57,70,.9))');
+
+    // Pin labels
+    svg.selectAll('text.pin-label').data(pinData).enter().append('text').attr('class','pin-label')
+      .attr('x',function(d){return d.x;}).attr('y',function(d){return d.y-16;})
+      .attr('text-anchor','middle').attr('fill','#fff').attr('font-family','Share Tech Mono,monospace')
+      .attr('font-size','15px').attr('font-weight','bold')
+      .attr('paint-order','stroke').attr('stroke','#0c0c10').attr('stroke-width',3)
+      .text(function(d){return d.info.type==='HQ'?'HQ':d.abbr;});
+  });
+})();
+
+// ══════════════════════════════════════════
+// ECHO CHAMBER - webcam + data cloud
+// ══════════════════════════════════════════
+(function(){
+  // Webcam
+  var video=document.getElementById('camFeed');
+  var fallback=document.getElementById('camFallback');
+  if(video){
+    navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:280,height:500}})
+    .then(function(stream){video.srcObject=stream;})
+    .catch(function(){video.style.display='none';if(fallback){fallback.style.display='flex';}});
+  }
+
+  // Scrolling data text inside phone
+  var dataLines=[
+    'location: 22.3193°N, 114.1694°E','browser: Chrome 124.0','device: MacBook Pro',
+    'scroll_depth: 87%','time_on_page: 4m 32s','mouse_clicks: 23','ip: 203.***.***.12',
+    'cookies: 47 active','fingerprint: #a8f2c9e1','interests: privacy, politics',
+    'age_range: 18-24','session: 3rd visit','referrer: google.com',
+    'screen: 1440x900','timezone: GMT+8','language: en-US',
+    'ad_profile: student, tech','biometric: face_detected',
+    'geolocation: GRANTED','microphone: LISTENING...',
+    'contacts: SYNCING...','photos: SCANNING...',
+    'keystrokes: LOGGING...','heart_rate: 72bpm',
+    'emotion: CONCERNED','attention: FOCUSED',
+  ];
+  var phoneScroll=document.getElementById('phoneDataScroll');
+  var lineIdx=0;
+  if(phoneScroll){
+    setInterval(function(){
+      var div=document.createElement('div');
+      div.textContent='> '+dataLines[lineIdx%dataLines.length];
+      div.style.color=Math.random()>.7?'#e63946':'#5a5a6a';
+      phoneScroll.appendChild(div);
+      phoneScroll.scrollTop=phoneScroll.scrollHeight;
+      if(phoneScroll.children.length>12)phoneScroll.removeChild(phoneScroll.firstChild);
+      lineIdx++;
+    },800);
+  }
+
+  // Floating data cloud around the phone
+  var cloud=document.getElementById('dataCloud');
+  if(!cloud)return;
+  var cx=cloud.getContext('2d');
+  var cw,ch;
+  function szCloud(){cw=cloud.parentElement.clientWidth;ch=cloud.parentElement.clientHeight;cloud.width=cw;cloud.height=ch;}
+  szCloud();window.addEventListener('resize',szCloud);
+
+  var tags=[
+    'YOUR LOCATION','BROWSING HISTORY','FACE ID','BIOMETRIC DATA',
+    'SEARCH QUERIES','PURCHASE HISTORY','CONTACTS','POLITICAL VIEWS',
+    'HEALTH DATA','RELATIONSHIPS','INCOME LEVEL','DAILY ROUTINE',
+    'EMOTIONAL STATE','CLICK PATTERNS','SCREEN TIME','VOICE DATA',
+    'RIGHT TO KNOW ACT ✗','GEOLOCATION PRIVACY ✗','DATA PRIVACY ACT ✗',
+    'STUDENT PROTECTION ✗','KEEP DEVICES SAFE ✗','HOUSEHOLD PRIVACY ✗',
+    'ECHO CHAMBER','FILTER BUBBLE','TARGETED ADS','ENGAGEMENT FARMING',
+    'POLARIZATION +21%','ANGER = CLICKS','OUTRAGE = PROFIT',
+    '$13.9M LOBBYING','73% BILLS KILLED','22 LOBBYISTS',
+  ];
+  var headlines=[
+    '"THEY want to DESTROY your values"','"The OTHER side is LYING to you"',
+    '"You won\'t BELIEVE what they did"','"This changes EVERYTHING"',
+    '"Share before they DELETE this"','"Wake up - they\'re coming for YOU"',
+    '"The TRUTH they don\'t want you to see"','"This is why you should be ANGRY"',
+  ];
+
+  var floaters=[];
+  for(var i=0;i<40;i++){
+    var isHeadline=i>=32;
+    floaters.push({
+      text:isHeadline?headlines[i-32]:tags[i%tags.length],
+      x:Math.random()*2000-500,
+      y:Math.random()*2000-500,
+      vx:(Math.random()-.5)*.4,
+      vy:(Math.random()-.5)*.4,
+      size:isHeadline?11:9,
+      alpha:.15+Math.random()*.25,
+      color:isHeadline?'#e63946':i%3===0?'#e63946':'#5a6a8a',
+      orbit:Math.random()*Math.PI*2,
+      orbitR:180+Math.random()*250,
+      orbitSpeed:.001+Math.random()*.003,
+    });
+  }
+
+  function tickCloud(){
+    cx.clearRect(0,0,cw,ch);
+    var pcx=cw/2,pcy=ch/2;
+    for(var i=0;i<floaters.length;i++){
+      var f=floaters[i];
+      f.orbit+=f.orbitSpeed;
+      var tx=pcx+Math.cos(f.orbit)*f.orbitR;
+      var ty=pcy+Math.sin(f.orbit)*f.orbitR*0.6;
+      f.x+=(tx-f.x)*.02;
+      f.y+=(ty-f.y)*.02;
+      // Draw connecting line to phone center (faint)
+      cx.strokeStyle='rgba(230,57,70,'+(f.alpha*.15)+')';
+      cx.lineWidth=.5;
+      cx.beginPath();cx.moveTo(pcx,pcy);cx.lineTo(f.x,f.y);cx.stroke();
+      // Draw text
+      cx.globalAlpha=f.alpha+Math.sin(Date.now()*.001+i)*.08;
+      cx.fillStyle=f.color;
+      cx.font=f.size+'px "Share Tech Mono",monospace';
+      cx.fillText(f.text,f.x,f.y);
+    }
+    cx.globalAlpha=1;
+    requestAnimationFrame(tickCloud);
+  }
+  tickCloud();
+
+  // Scrolling social media feeds - LEFT (far-left extreme) and RIGHT (far-right extreme)
+  var leftFeed=document.getElementById('feedLeft');
+  var rightFeed=document.getElementById('feedRight');
+  var leftPosts=[
+    {h:'BILLIONAIRES are hoarding YOUR wealth while you starve',e:'😡 12.4K'},
+    {h:'Capitalism is a death cult. Period.',e:'🔥 8.1K'},
+    {h:'Every cop is complicit. Defund them ALL.',e:'✊ 6.7K'},
+    {h:'If you eat meat you are personally destroying the planet',e:'🌍 4.3K'},
+    {h:'Conservatives want you dead. This is not hyperbole.',e:'⚠️ 9.8K'},
+    {h:'ABOLISH the entire prison system. No exceptions.',e:'💢 5.2K'},
+    {h:'Anyone who votes right is a fascist. Full stop.',e:'🚨 7.6K'},
+    {h:'The rich should have EVERYTHING taken from them',e:'💥 11.3K'},
+    {h:'White silence is violence. Complicity is a choice.',e:'📢 3.9K'},
+    {h:'Burn it all down and start over. The system cannot be fixed.',e:'🔴 8.5K'},
+    {h:'If you own a business you are an exploiter',e:'😤 6.1K'},
+    {h:'Religion is the root of ALL oppression',e:'⚡ 4.8K'},
+  ];
+  var rightPosts=[
+    {h:'THEY are replacing you. The invasion is real.',e:'😡 14.2K'},
+    {h:'The left wants to DESTROY your family values',e:'🔥 9.7K'},
+    {h:'Arm yourself NOW. They are coming for your guns.',e:'🔫 7.3K'},
+    {h:'Climate change is a HOAX to control you',e:'⚠️ 11.1K'},
+    {h:'Every liberal is a communist. Wake up America.',e:'🚨 8.4K'},
+    {h:'The media is the ENEMY of the people',e:'💢 6.9K'},
+    {h:'Universities are brainwashing your children',e:'📢 5.5K'},
+    {h:'They want to make your kids transgender',e:'💥 10.6K'},
+    {h:'The election was STOLEN. We have proof.',e:'🔴 13.8K'},
+    {h:'Immigrants are taking YOUR jobs and YOUR money',e:'😤 7.2K'},
+    {h:'Christianity is under attack. Fight back.',e:'⚡ 4.1K'},
+    {h:'The deep state controls everything you see',e:'👁 9.3K'},
+  ];
+  function buildFeed(container,posts,color,label){
+    if(!container)return;
+    container.innerHTML='';
+    var all=posts.concat(posts).concat(posts);
+    var html='<div style="padding:10px 12px;font-family:Share Tech Mono,monospace;font-size:1.4rem;color:'+color+';letter-spacing:2px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center">'+label+'</div>';
+    html+='<div style="animation:feedScroll '+(all.length*4)+'s linear infinite">';
+    all.forEach(function(p){
+      html+='<div style="padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-family:Inter,sans-serif">';
+      html+='<div style="font-size:1.3rem;color:'+color+';font-weight:700;line-height:1.5;margin-bottom:8px">'+p.h+'</div>';
+      html+='<div style="font-size:1.4rem;color:#6a6a7a">'+p.e+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+    container.innerHTML=html;
+  }
+  buildFeed(leftFeed,leftPosts,'#e63946','YOUR LEFT FEED');
+  buildFeed(rightFeed,rightPosts,'#4a90d9','YOUR RIGHT FEED');
+})();
+// CREEPY EXTRAS
+(function(){
+  var bc=document.getElementById("bodyCount"),bcNum=document.getElementById("bcNum");
+  var shown=false;
+  window.addEventListener("scroll",function(){
+    var pct=window.scrollY/(document.body.scrollHeight-window.innerHeight);
+    if(pct>.12&&!shown){bc.style.display="block";shown=true;}
+    var count=Math.min(20,Math.floor(pct*50));
+    if(bcNum)bcNum.textContent=count;
+    var r=Math.round(12+pct*14),g=Math.round(12-pct*8),b=Math.round(16-pct*10);
+    document.body.style.backgroundColor="rgb("+r+","+g+","+b+")";
+  },{passive:true});
+  var echoSec=document.getElementById("echoSection");
+  var nShown=false;
+  if(echoSec){new IntersectionObserver(function(e){
+    if(e[0].isIntersecting&&!nShown){nShown=true;
+      ["notif1","notif2","notif3"].forEach(function(id,i){
+        setTimeout(function(){var el=document.getElementById(id);if(el){el.classList.add("show");setTimeout(function(){el.classList.remove("show");},5000);}},1500+i*3500);
+      });
+    }
+  },{threshold:.2}).observe(echoSec);}
+  var camTs=document.getElementById("camTs");
+  if(camTs){setInterval(function(){camTs.textContent=new Date().toISOString().replace("T"," ").substring(0,19)+" UTC";},1000);}
+})();
+</script>
+<script src="horror.js"></script>
+</body>
+</html>

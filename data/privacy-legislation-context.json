@@ -1,0 +1,34 @@
+{
+  "_source": "NCSL, IAPP, Wikipedia — compiled from multiple public sources on US state privacy legislation",
+  "_note": "Key US privacy and tech legislation milestones providing context for IL lobbying activity. Content rephrased for compliance.",
+  "national_milestones": [
+    { "date": "2008-10-03", "event": "Illinois BIPA (Biometric Information Privacy Act) enacted — first US biometric privacy law", "relevance": "high" },
+    { "date": "2016-04-14", "event": "EU GDPR adopted (effective May 2018) — triggered global privacy legislation wave", "relevance": "medium" },
+    { "date": "2017-03-28", "event": "Congress repealed FCC broadband privacy rules (S.J.Res.34)", "relevance": "medium" },
+    { "date": "2017-12-14", "event": "FCC voted to repeal net neutrality (Restoring Internet Freedom Order)", "relevance": "medium" },
+    { "date": "2018-03-17", "event": "Cambridge Analytica scandal broke — accelerated privacy legislation", "relevance": "high" },
+    { "date": "2018-05-25", "event": "EU GDPR took effect", "relevance": "medium" },
+    { "date": "2018-06-28", "event": "California Consumer Privacy Act (CCPA) signed into law", "relevance": "high" },
+    { "date": "2018-06-21", "event": "US Supreme Court: South Dakota v. Wayfair — states can tax online sales", "relevance": "high" },
+    { "date": "2019-01-01", "event": "Illinois BIPA lawsuits surged after Rosenbach v. Six Flags ruling", "relevance": "high" },
+    { "date": "2020-01-01", "event": "CCPA took effect in California", "relevance": "medium" },
+    { "date": "2020-11-03", "event": "California Proposition 24 (CPRA) passed by voters", "relevance": "medium" },
+    { "date": "2021-03-02", "event": "Virginia Consumer Data Protection Act signed", "relevance": "medium" },
+    { "date": "2021-07-07", "event": "Colorado Privacy Act signed", "relevance": "medium" }
+  ],
+  "illinois_specific": [
+    { "date": "2008-10-03", "event": "BIPA enacted — 740 ILCS 14", "category": "biometric" },
+    { "date": "2017-01-01", "event": "IL 100th General Assembly convened — surge in privacy bills", "category": "legislative" },
+    { "date": "2017-03-14", "event": "HB2411 (Biometric Data Commercial Use) introduced — IA opposed", "category": "biometric" },
+    { "date": "2019-01-25", "event": "IL Supreme Court: Rosenbach v. Six Flags — no actual injury needed for BIPA claims", "category": "biometric" },
+    { "date": "2019-06-28", "event": "IL enacted marketplace facilitator tax law (SB0119)", "category": "tax" },
+    { "date": "2021-01-01", "event": "IL 102nd General Assembly — continued privacy and tech regulation push", "category": "legislative" }
+  ],
+  "bill_topics_in_dataset": {
+    "privacy_and_data": ["RIGHT TO KNOW ACT", "GEOLOCATION PRIVACY PROTECTION", "DATA PRIVACY ACT", "BUSINESS-TECH", "BIOMETRIC DATA-COMMERCIAL USE", "KEEP INTERNET DEVICES SAFE ACT", "PROTECTING HOUSEHOLD PRIVACY", "DIGITAL IDENTITY ASSET-ROYALTY"],
+    "education_data": ["STUDENT ONLINE PROTECTION"],
+    "tax_and_commerce": ["REVENUE-TECH", "USE/OCC TX-BUSINESS IN STATE", "SECOND FY2020 BIMP", "RET OCC TX-MKTPLCE FACILITATOR"],
+    "sharing_economy": ["SHORT-TERM RENTAL REGULATION", "TRANSPORT NETWORK-REPEAL 2027", "CAR-SHARING PROGRAM ACT", "RENTAL CAR-DAMAGE WAIVER-VOID"],
+    "cybersecurity": ["CYBERSECURITY LEGAL DEFENSE"]
+  }
+}

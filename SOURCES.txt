@@ -1,0 +1,94 @@
+================================================================================
+  INTERNET ASSOCIATION — IL LOBBYING DATA: SOURCES & REFERENCES
+================================================================================
+
+
+1. IL LOBBYING POSITIONS (Primary Dataset)
+   ─────────────────────────────────────────
+   File:    positions-lobbyistFirmName-internet.csv
+   What:    73 records of Internet Association testimony positions on
+            Illinois state bills (2016–2021)
+   Source:  Provided dataset (original)
+
+
+2. IA FEDERAL LOBBYING SPENDING
+   ─────────────────────────────────────────
+   What:    Internet Association annual federal lobbying expenditure
+            (2013–2021), registered lobbyist counts, top issues lobbied
+   Source:  OpenSecrets (Center for Responsive Politics)
+   URL:     https://www.opensecrets.org/federal-lobbying/clients/summary?cycle=2021&id=D000067668
+   Also:    https://bigtechwiki.com/index.php/Internet_Association
+   Notes:   IA reported $13.9M total federal lobbying spend 2013–2020
+
+
+3. US INTERNET SECTOR LOBBYING SPENDING
+   ─────────────────────────────────────────
+   What:    Total US internet sector lobbying by year (2016–2021)
+            + top 10 company spenders (2020)
+   Source:  Statista / OpenSecrets
+   URL:     https://www.statista.com/statistics/1035942/amount-spent-internet-sector-lobbying-usa/
+   Also:    https://www.statista.com/statistics/1035987/us-leading-internet-lobbying-spenders/
+
+
+4. BILL OUTCOMES
+   ─────────────────────────────────────────
+   What:    Legislative outcome (enacted/failed) for all 26 unique bills
+            in the dataset, with public act numbers where applicable
+   Source:  Illinois General Assembly — official bill status records
+   URL:     https://www.ilga.gov/legislation/
+   Notes:   6 enacted, 20 failed. 73.1% IA position alignment rate.
+
+
+5. INTERNET ASSOCIATION MEMBERS & KEY EVENTS
+   ─────────────────────────────────────────
+   What:    14 founding members (2012), 22 additional members (by 2018),
+            3 departed before shutdown, 6 key organizational events
+   Sources: Wikipedia — Internet Association
+            https://en.wikipedia.org/wiki/Internet_Association
+            VentureBeat
+            https://venturebeat.com/business/14-tech-companies-form-the-justice-league-of-internet-lobbying-groups/
+            MarketWatch
+            https://www.marketwatch.com/story/the-antitrust-fight-may-have-killed-one-of-silicon-valleys-most-powerful-lobbying-groups-11639592637
+            Engadget
+            https://www.engadget.com/2012-09-19-internet-association-members-announced.html
+            CNET
+            https://www.cnet.com/tech/tech-industry/google-facebook-amazon-lead-new-tech-lobby-group/
+
+
+6. PRIVACY & TECH LEGISLATION MILESTONES
+   ─────────────────────────────────────────
+   What:    13 national milestones (BIPA, GDPR, Cambridge Analytica,
+            CCPA, Wayfair ruling, etc.) + 6 Illinois-specific milestones
+            + bill topic categorisation
+   Sources: National Conference of State Legislatures (NCSL)
+            https://www.ncsl.org/technology-and-communication/2021-consumer-data-privacy-legislation
+            International Association of Privacy Professionals (IAPP)
+            https://iapp.org/resources/article/us-state-privacy-legislation-tracker
+            Wikipedia — various articles on BIPA, CCPA, GDPR
+
+
+7. US STATE PRIVACY & REGULATION LANDSCAPE
+   ─────────────────────────────────────────
+   What:    States with biometric privacy laws, comprehensive privacy
+            laws (by 2021), online sales tax (post-Wayfair), IA office
+            locations, member company HQ states, 2019 state privacy
+            bill counts
+   Sources: NCSL
+            https://www.ncsl.org/technology-and-communication/state-laws-related-to-digital-privacy
+            IAPP
+            https://iapp.org/resources/article/us-state-privacy-legislation-tracker
+            Wikipedia — Internet Association (office locations)
+            https://en.wikipedia.org/wiki/Internet_Association
+
+
+================================================================================
+  NOTES
+================================================================================
+
+- All data was compiled for academic/research visualisation purposes.
+- Content from external sources has been rephrased for licensing compliance.
+- No more than 30 consecutive words were reproduced from any single source.
+- Data is accurate as of the Internet Association's active period (2012–2021).
+- The IA dissolved in December 2021.
+
+================================================================================
