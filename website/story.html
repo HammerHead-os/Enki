@@ -1290,13 +1290,15 @@ function layTopic(){var ts=['Privacy & Data','Education Data','Tax & Commerce','
   ts.forEach(function(t){gr[t]=[];});bills.forEach(function(b){gr[b.topic].push(b);});var r=new Array(bills.length);
   var cols=5,g=U+4;
   var active=ts.filter(function(t){return gr[t].length>0;});
-  var rowH=Math.floor((H-40)/active.length);
-  var ri=0;
+  var gap=30;
+  // Calculate total height needed
+  var totalH=0;
+  active.forEach(function(t){totalH+=Math.ceil(gr[t].length/cols)*g+gap;});
+  var oy=Math.max(10,(H-totalH)/2);
   active.forEach(function(t){
     var ox=(W-cols*g)/2;
-    var oy=20+ri*rowH+10;
     gr[t].forEach(function(b,i){r[b.idx]={x:ox+(i%cols)*g,y:oy+Math.floor(i/cols)*g,color:C[t]};});
-    ri++;
+    oy+=Math.ceil(gr[t].length/cols)*g+gap;
   });return r;}
 
 function laySess(){var ss=['2015-2016','2017-2018','2019-2020','2021-2022'],gr={};ss.forEach(function(s){gr[s]=[];});
