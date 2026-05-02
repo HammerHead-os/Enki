@@ -600,6 +600,7 @@ body.deep{background-color:#120810}
       // Phase 2: Folder slams and tips
       setTimeout(function(){
         folder.style.animation='folderSlam 2s cubic-bezier(.25,.46,.45,.94) forwards';
+        setTimeout(function(){folder.style.display='none';},2000);
       },600);
 
       // Phase 3: Section background pulse
@@ -782,7 +783,7 @@ function buildTreemap(){
   nodes.on('mouseover',function(ev,d){
     d3.select(this).select('rect').attr('stroke','#fff').attr('stroke-width',2);
     tmTT.style.display='block';
-    tmTT.innerHTML='<strong style="color:#f1f1f1">'+d.data.company+'</strong><br>$'+d.data.amount+'M<br><span style="color:#7a7a90;font-size:.75rem">Click to inspect</span>';
+    tmTT.innerHTML='<strong style="color:#f1f1f1">'+d.data.company+'</strong><br>$'+d.data.amount+'M';
   }).on('mousemove',function(ev){
     tmTT.style.left=(ev.clientX+16)+'px';tmTT.style.top=(ev.clientY-10)+'px';
   }).on('mouseout',function(ev,d){
