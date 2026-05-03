@@ -1,4 +1,4 @@
-# 👁 Big Brother Is Watching
+# 👁 👁 Big Brother Is Watching 👁 👁
 
 A horror themed interactive data visualization that exposes how the Internet Association, a lobbying group funded by Amazon, Google, Facebook, and 40 other tech giants, systematically killed privacy legislation in Illinois between 2016 and 2021.
 
@@ -68,6 +68,31 @@ No frameworks. No build tools. One HTML file.
 - [PNAS](https://www.pnas.org/doi/10.1073/pnas.2023301118) (algorithmic amplification)
 - [WSJ Facebook Files](https://www.wsj.com/articles/the-facebook-files-11631713039)
 - [Wikipedia](https://en.wikipedia.org/wiki/Internet_Association), [Statista](https://www.statista.com)
+
+## GenAI Usage Disclosure
+
+This project used AI assistance (Kiro/Claude) for code implementation and refinement. Below is a summary of the prompts and what they produced.
+
+### Horror Theme and Visual Effects
+- "I have a list of extremist left wing and right comments. Please have them scroll on the sides of the screen with left wing comments on the left and right wing comments on the right.   	
+  Also add emojis like thumbs up, comment, announcement etc and show a huge number of likes next to them." 
+- "Make the left wing comments blue and right wing comments red" — Swapped feed colors in the echo chamber section
+- "I want files to spill out of a folder as if the folder was thrown and the files leaked" — Built the cinematic folder spill animation with staggered photo scatter
+- "Make the scattering part more dramatic, very cinematic" — Added 5 phase sequence: red flash, screen shake, folder slam, explosive photo scatter with spring bounce, mini flashes per photo
+- "Make the transition slower" — Slowed all animation timings (folder slam 2s, photo stagger 400ms, landing bounce 1.4s)
+- "When the pictures get released, I want you to hide the folder" — Folder disappears after slam animation
+- "Added a video to evidence, have it play in the middle while photos scatter around it, think of a creative and spooky way to start the video" — Built CRT monitor with TV static canvas effect that clears to reveal surveillance footage with REC dot and ticking timestamp
+- "Have the big brother and the whole creepy eyes shebang in the very end. The eyes gif in the assets folder and use red coloured text for dramatic effect" — Created grand finale section with spinning rings, orbiting cycle words, blinking eyes, and typewriter text
+
+### Layout and Sizing
+- "The categories are not properly spaced apart" — Fixed topic grouping layout to calculate spacing based on actual content height
+- "The text for the tiles is too small, make 3x" — Scaled up SVG group labels and legend text
+- "Labels way too big, 0.5 times it now" — Scaled back down to readable middle ground
+
+### Infrastructure
+- Multiple prompts for git setup, .gitignore configuration, pushing to GitHub, and GitHub Pages deployment troubleshooting
+
+All visual design decisions, data analysis, narrative structure, and the core visualizations (treemap, choropleth, unit viz) were built by the team. AI was used primarily for implementing horror effects, animation sequences, and iterating on visual polish.
 
 ## License
 
